@@ -1,0 +1,60 @@
+# Elastic Workflow：矿物融合检索工具（现场注册为 Agent Builder Workflow 工具）
+# 架构：查询文本 --EIS .jina-clip-v2--> 向量 --> RRF(BM25+kNN) --> top 证据
+# 语法基准：CSDN 159643240（DSL via Workflow）；step 间 Liquid 模板取值。
+# ⚠️ 现场校准点：steps 输出引用路径、EIS 端点名（GET _inference 确认）、license=trial。
+version: "1"
+name: mineral_hybrid_search
+description: >
+  Hybrid (RRF) search over the minerals-images index. Combines BM25 over
+  property text with kNN over jina-clip-v2 image vectors. Input: an English
+  description of observed mineral properties (color, streak, luster, hardness,
+  crystal system). Returns top candidate species with evidence.
+triggers:
+  - type: manual
+inputs:
+  - name: query_text
+    type: string
+    required: true
+consts:
+  index_name: minerals-images
+steps:
+  - name: embed_query
+    type: elasticsearch.request
+    with:
+      method: POST
+      path: /_inference/embedding/.jina-clip-v2
+      body:
+        input:
+          - "{{ inputs.query_text }}"
+  - name: rrf_search
+    type: elasticsearch.request
+    with:
+      method: POST
+      path: /{{ consts.index_name }}/_search
+      body:
+        size: 10
+        _source: ["species", "props_text", "crystal_system",
+                  "hardness_min", "hardness_max", "thumb"]
+        retriever:
+          rrf:
+            rank_window_size: 50
+            rank_constant: 20
+            retrievers:
+              - standard:
+                  query:
+                    multi_match:
+                      query: "{{ inputs.query_text }}"
+                      fields: ["name^2", "props_text", "description"]
+              - knn:
+                  field: image_vector
+                  query_vector: "{{ steps.embed_query.output.embeddings[0].embedding }}"
+                  k: 20
+                  num_candidates: 100
+  - name: format_results
+    type: console
+    with:
+      message: |
+        {% for hit in steps.rrf_search.output.hits.hits limit:10 %}
+        - {{ hit._source.species }} (score {{ hit._score }}), crystal system
+          {{ hit._source.crystal_system }}, hardness {{ hit._source.hardness_min }}-{{ hit._source.hardness_max }}
+        {% endfor %}

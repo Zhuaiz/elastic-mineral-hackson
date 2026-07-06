@@ -1,0 +1,9 @@
+.venv/
+data/parquet/
+data/images/
+data/embeddings/
+__pycache__/
+*.pyc
+.env
+trapstreet-task/cases/
+trapstreet-task/reference.md
