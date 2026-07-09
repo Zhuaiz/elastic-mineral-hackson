@@ -1,0 +1,9 @@
+{
+ "id": "mineral-id",
+ "name": "Mineral Identification from Field Observations",
+ "description": "Given hand-specimen observations (crystal system, Mohs hardness, streak, color, luster) of one of 98 mineral species, name the species. Tests closed-book recall vs retrieval over a mineral catalog. Reference: Wikipedia (CC BY-SA 4.0).",
+ "judge": "judge.py",
+ "reference": "reference.md",
+ "cases_dir": "cases",
+ "num_cases": 50
+}

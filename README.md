@@ -34,8 +34,9 @@ python scripts/index_es.py
 python scripts/search_cli.py --text "green banded mineral, green streak, hardness 4" --show-query
 python scripts/search_cli.py --image data/images/malachite/validation-00012.jpg
 
-# 5. trapstreet 任务
-python trapstreet-task/make_cases.py
+# 5. 评测（见 trap/README.md 的两层设计）
+python trap/task/make_cases.py            # trapstreet 公开任务（闭卷 vs RAG）
+source .env && .venv/bin/python trap/eval/ablation.py   # RRF 消融（证明融合有用）
 ```
 
 ## 人工待办（只有你能做）
@@ -56,7 +57,8 @@ scripts/fetch_properties.py  Wikipedia/Mindat 属性抓取 + 合并
 scripts/embed_images.py      jina-clip-v2 MPS 嵌入 + 缩略图导出
 scripts/index_es.py          建索引 + bulk 写入（images/species 双索引）
 scripts/search_cli.py        RRF 融合检索 CLI（文/图查询 + 结构化过滤）
-trapstreet-task/             评测任务生成器 + judge.py
+trap/task/                   trapstreet 公开任务：case 生成器 + judge.py + reference.md
+trap/eval/                   RRF 消融 harness（图像/文本/融合 三路准确率对比）
 data/                        parquet(1.17GB val+test) / properties / embeddings / images
 ```
 

@@ -5,6 +5,6 @@ data/embeddings/
 __pycache__/
 *.pyc
 .env
-trapstreet-task/cases/
-trapstreet-task/reference.md
 data/properties/
+trap/eval/results/
+trap/eval/*.parquet
