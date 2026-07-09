@@ -7,3 +7,4 @@ __pycache__/
 .env
 trapstreet-task/cases/
 trapstreet-task/reference.md
+data/properties/

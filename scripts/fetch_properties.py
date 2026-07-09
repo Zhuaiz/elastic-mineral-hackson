@@ -6,11 +6,23 @@
   python3 scripts/fetch_properties.py merge       # 合并 -> data/properties/minerals.json
 仅用标准库，venv 未建好也能跑。
 """
+import html
 import json
+import re
 import sys
 import time
 import urllib.parse
 import urllib.request
+
+_TAG = re.compile(r"<[^>]+>")
+
+
+def clean(value):
+    """去掉 Mindat 字段里的 HTML 标签与实体（<sub>/&#9723; 等），压缩空白。"""
+    if not isinstance(value, str):
+        return value
+    text = html.unescape(_TAG.sub("", value))
+    return re.sub(r"\s+", " ", text.replace("\xa0", " ")).strip()
 
 from config import (MINDAT_API_KEY, PROPS_DIR, all_canonical_names)
 
@@ -110,18 +122,18 @@ def merge() -> None:
         hardness_max = m.get("hmax") or hardness_min
         rec = {
             "species": name,
-            "formula": m.get("ima_formula") or m.get("mindat_formula") or "",
-            "crystal_system": m.get("csystem") or "",
+            "formula": clean(m.get("ima_formula") or m.get("mindat_formula") or ""),
+            "crystal_system": clean(m.get("csystem") or ""),
             "hardness_min": hardness_min,
             "hardness_max": hardness_max,
-            "streak": m.get("streak") or "",
-            "color": m.get("colour") or "",
-            "luster": m.get("lustre") or m.get("lustretype") or "",
+            "streak": clean(m.get("streak") or ""),
+            "color": clean(m.get("colour") or ""),
+            "luster": clean(m.get("lustre") or m.get("lustretype") or ""),
             "density": m.get("dmeas") or m.get("dcalc") or None,
-            "diaphaneity": m.get("diapheny") or "",
-            "cleavage": m.get("cleavage") or "",
-            "fracture": m.get("fracturetype") or "",
-            "short_description": m.get("description_short") or "",
+            "diaphaneity": clean(m.get("diapheny") or ""),
+            "cleavage": clean(m.get("cleavage") or ""),
+            "fracture": clean(m.get("fracturetype") or ""),
+            "short_description": clean(m.get("description_short") or ""),
             "wikipedia": w.get("extract", ""),
         }
         parts = [f"{name}."]
