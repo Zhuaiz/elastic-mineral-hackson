@@ -16,6 +16,8 @@
 | BM25 单路（属性文字） | 56.0% | +20 |
 | **RRF 融合（BM25 + 图像 kNN + 硬度过滤）** | **92.0%** | **+56** |
 
+[![trapstreet 公开榜：四个检索配置同台对比](docs/assets/leaderboard.png)](https://trapstreet.run/tasks/mineral-species-id)
+
 ▶ **公开榜单（可点进每个 case 看判分）**: [trapstreet.run/tasks/mineral-species-id](https://trapstreet.run/tasks/mineral-species-id)
 
 检索层的独立证据（不调 LLM，2,749 条查询的检索命中率）：

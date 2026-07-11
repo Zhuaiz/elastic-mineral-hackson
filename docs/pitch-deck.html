@@ -273,23 +273,34 @@
       <div class="eyebrow">作答准确率 vs 检索强度</div>
       <h2>检索越强，作答越准。</h2>
       <div class="chart" id="chart">
-        <div class="bar-row"><span class="lbl">闭卷</span><div class="bar-track"><div class="bar-fill" data-w="22"></div></div><span class="pct">—</span></div>
-        <div class="bar-row"><span class="lbl">BM25 单路</span><div class="bar-track"><div class="bar-fill" data-w="48"></div></div><span class="pct">—</span></div>
-        <div class="bar-row"><span class="lbl">图像单路</span><div class="bar-track"><div class="bar-fill" data-w="44"></div></div><span class="pct">—</span></div>
-        <div class="bar-row"><span class="lbl">RRF 融合</span><div class="bar-track"><div class="bar-fill peak" data-w="82"></div></div><span class="pct">—</span></div>
+        <div class="bar-row"><span class="lbl">闭卷</span><div class="bar-track"><div class="bar-fill" data-w="36"></div></div><span class="pct">36%</span></div>
+        <div class="bar-row"><span class="lbl">图像单路</span><div class="bar-track"><div class="bar-fill" data-w="48"></div></div><span class="pct">48%</span></div>
+        <div class="bar-row"><span class="lbl">BM25 单路</span><div class="bar-track"><div class="bar-fill" data-w="56"></div></div><span class="pct">56%</span></div>
+        <div class="bar-row"><span class="lbl">RRF 融合</span><div class="bar-track"><div class="bar-fill peak" data-w="92"></div></div><span class="pct">92%</span></div>
       </div>
-      <p class="note">同一套 50 题 · 同一个 judge · 只改检索证据。曲线形状为预期；现场用 ablation.py / accuracy_vs_retrieval.py 的真实数字替换。发布到 trapstreet 公开可复现。</p>
+      <p class="note">真实数字：同一套 50 题 · 同一个 judge · 同一个 qwen-plus，只改检索证据——RRF 相对最强单路 +36pt、相对闭卷 +56pt。四个配置全部挂在 trapstreet 公开榜。</p>
     </div>
   </section>
 
-  <!-- 09 trapstreet -->
+  <!-- 09 Scoreboard -->
+  <section class="slide" aria-label="公开榜实拍">
+    <div class="catalog"><b>Nº 09</b><span>SCOREBOARD · trapstreet.run</span></div>
+    <div class="body">
+      <div class="eyebrow">公开榜实拍 · 四个 solution 同台</div>
+      <img src="assets/leaderboard.png" alt="trapstreet 公开榜：RRF 融合 92% 领先，BM25/图像单路居中，闭卷垫底"
+           style="max-width:100%;max-height:56vh;border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.35)">
+      <p class="note">trapstreet.run/tasks/mineral-species-id —— 每行一个检索配置，engine、耗时、每 case 判分都可点开；任何人可拉下任务重跑。</p>
+    </div>
+  </section>
+
+  <!-- 10 trapstreet -->
   <section class="slide" aria-label="trapstreet">
-    <div class="catalog"><b>Nº 09</b><span>TRAPSTREET · 评测层</span></div>
+    <div class="catalog"><b>Nº 10</b><span>TRAPSTREET · 评测层</span></div>
     <div class="body">
       <div class="eyebrow">数字为什么可信</div>
       <h2>题目、判分、结果，<br>全部公开在 <strong class="hl">trapstreet</strong>。</h2>
       <div class="rows">
-        <div class="lyr"><span class="n">01</span><div><h3>任务公开</h3><p>mineral-id：50 道"野外观察 → 说出矿物种名"。题面、参考文档、judge.py 判分脚本都在 GitHub 仓库里，出题逻辑可审查</p></div></div>
+        <div class="lyr"><span class="n">01</span><div><h3>任务公开</h3><p>mineral-species-id：50 道"野外观察 → 说出矿物种名"。题面、expected、judge.py 判分脚本都在 GitHub 仓库里（官方 traptask 格式），出题逻辑可审查</p></div></div>
         <div class="lyr"><span class="n">02</span><div><h3>本地真跑</h3><p>闭卷模型和接上 Elastic RRF 检索的 agent，各答同一套题；judge 按 IMA 标准种名归一化后自动判分，没有人工打分</p></div></div>
         <div class="lyr"><span class="n">03</span><div><h3>上榜可复现</h3><p>结果 tp submit 到 trapstreet.run 公开榜——榜上每个数字对应一次真实运行，任何人都能拉下任务重跑验证</p></div></div>
       </div>
@@ -297,9 +308,9 @@
     </div>
   </section>
 
-  <!-- 10 Stack -->
+  <!-- 11 Stack -->
   <section class="slide" aria-label="技术栈">
-    <div class="catalog"><b>Nº 10</b><span>THE STACK</span></div>
+    <div class="catalog"><b>Nº 11</b><span>THE STACK</span></div>
     <div class="body">
       <div class="eyebrow">整条链路</div>
       <div class="arch">
@@ -359,9 +370,9 @@
     </div>
   </section>
 
-  <!-- 10 Value -->
+  <!-- 12 Value -->
   <section class="slide" aria-label="价值">
-    <div class="catalog"><b>Nº 11</b><span>VALUE</span></div>
+    <div class="catalog"><b>Nº 12</b><span>VALUE</span></div>
     <div class="body">
       <div class="eyebrow">还能用在哪</div>
       <h2>凡是"看到一块石头<br>想知道它是什么"。</h2>
@@ -372,9 +383,9 @@
     </div>
   </section>
 
-  <!-- 11 Closing -->
+  <!-- 13 Closing -->
   <section class="slide" aria-label="结尾">
-    <div class="catalog"><b>Nº 12</b><span>CLOSING</span></div>
+    <div class="catalog"><b>Nº 13</b><span>CLOSING</span></div>
     <div class="body">
       <div class="eyebrow">结论</div>
       <p class="memory">细粒度矿物靠单一模态搜不准。<strong>RRF</strong> 把图像、属性和硬度过滤合进一个查询，作答准确率随检索增强一路抬升——数字挂在 trapstreet 公开榜上，谁都能复现。</p>
