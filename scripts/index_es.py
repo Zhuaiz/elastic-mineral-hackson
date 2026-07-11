@@ -8,8 +8,8 @@ import json
 import pyarrow.parquet as pq
 from elasticsearch import Elasticsearch, helpers
 
-from config import (EMBED_DIMS, EMBED_DIR, ES_API_KEY, ES_URL,
-                    INDEX_IMAGES, INDEX_SPECIES, PROPS_DIR)
+from config import (EMBED_DIMS, EMBED_DIR, ES_API_KEY, ES_PASSWORD, ES_URL,
+                    ES_USER, INDEX_IMAGES, INDEX_SPECIES, PROPS_DIR)
 
 IMAGES_MAPPING = {
     "properties": {
@@ -52,9 +52,14 @@ SPECIES_MAPPING = {
 
 
 def es_client() -> Elasticsearch:
-    if not ES_URL or not ES_API_KEY:
-        raise SystemExit("先设置 ES_URL 与 ES_API_KEY 环境变量（Elastic Cloud 部署页生成）")
-    return Elasticsearch(ES_URL, api_key=ES_API_KEY, request_timeout=120)
+    if not ES_URL:
+        raise SystemExit("先 source .env（需要 ES_URL + ES_API_KEY 或 ES_USER/ES_PASSWORD）")
+    if ES_API_KEY:
+        return Elasticsearch(ES_URL, api_key=ES_API_KEY, request_timeout=120)
+    if ES_USER and ES_PASSWORD:
+        return Elasticsearch(ES_URL, basic_auth=(ES_USER, ES_PASSWORD),
+                             request_timeout=120)
+    raise SystemExit("缺少认证：设置 ES_API_KEY 或 ES_USER/ES_PASSWORD")
 
 
 def species_fields(rec: dict) -> dict:

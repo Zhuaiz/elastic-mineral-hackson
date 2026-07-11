@@ -14,6 +14,8 @@ EMBED_DIMS = 1024
 
 ES_URL = os.environ.get("ES_URL", "")
 ES_API_KEY = os.environ.get("ES_API_KEY", "")
+ES_USER = os.environ.get("ES_USER", "")
+ES_PASSWORD = os.environ.get("ES_PASSWORD", "")
 MINDAT_API_KEY = os.environ.get("MINDAT_API_KEY", "")
 
 INDEX_IMAGES = "minerals-images"
