@@ -1,5 +1,5 @@
 <meta charset="utf-8">
-<title>石头记 · 矿物鉴定 Agent · Pitch</title>
+<title>矿物鉴定 Agent · Elastic 融合检索 · Pitch</title>
 <style>
   :root {
     --ground: #0e1a17; --panel: #14241f; --panel-2: #1a2e28;
@@ -162,7 +162,7 @@
     <div class="catalog"><b>SPECIMEN Nº 01</b><span>AGENTHACK · BEIJING · 2026</span></div>
     <div class="body">
       <div>
-        <div class="eyebrow">石头记 · Elastic 融合检索 · AI Agent</div>
+        <div class="eyebrow">Elastic · 融合检索 · AI Agent</div>
         <h1>看一块石头，<br>就说出它是什么矿物。</h1>
         <p class="lead">一个用 Elasticsearch 融合检索（RRF）驱动的矿物鉴定 Agent —— 照片、属性、硬度，一次查询融合定种。</p>
         <div class="title-mark">
@@ -282,9 +282,24 @@
     </div>
   </section>
 
-  <!-- 09 Stack -->
+  <!-- 09 trapstreet -->
+  <section class="slide" aria-label="trapstreet">
+    <div class="catalog"><b>Nº 09</b><span>TRAPSTREET · 评测层</span></div>
+    <div class="body">
+      <div class="eyebrow">数字为什么可信</div>
+      <h2>题目、判分、结果，<br>全部公开在 <strong class="hl">trapstreet</strong>。</h2>
+      <div class="rows">
+        <div class="lyr"><span class="n">01</span><div><h3>任务公开</h3><p>mineral-id：50 道"野外观察 → 说出矿物种名"。题面、参考文档、judge.py 判分脚本都在 GitHub 仓库里，出题逻辑可审查</p></div></div>
+        <div class="lyr"><span class="n">02</span><div><h3>本地真跑</h3><p>闭卷模型和接上 Elastic RRF 检索的 agent，各答同一套题；judge 按 IMA 标准种名归一化后自动判分，没有人工打分</p></div></div>
+        <div class="lyr"><span class="n">03</span><div><h3>上榜可复现</h3><p>结果 tp submit 到 trapstreet.run 公开榜——榜上每个数字对应一次真实运行，任何人都能拉下任务重跑验证</p></div></div>
+      </div>
+      <p class="note">第 08 页的准确率曲线与公开榜用的是同一套题、同一个 judge——一把尺子量到底。</p>
+    </div>
+  </section>
+
+  <!-- 10 Stack -->
   <section class="slide" aria-label="技术栈">
-    <div class="catalog"><b>Nº 09</b><span>THE STACK</span></div>
+    <div class="catalog"><b>Nº 10</b><span>THE STACK</span></div>
     <div class="body">
       <div class="eyebrow">整条链路</div>
       <div class="arch">
@@ -346,7 +361,7 @@
 
   <!-- 10 Value -->
   <section class="slide" aria-label="价值">
-    <div class="catalog"><b>Nº 10</b><span>VALUE</span></div>
+    <div class="catalog"><b>Nº 11</b><span>VALUE</span></div>
     <div class="body">
       <div class="eyebrow">还能用在哪</div>
       <h2>凡是"看到一块石头<br>想知道它是什么"。</h2>
@@ -359,11 +374,11 @@
 
   <!-- 11 Closing -->
   <section class="slide" aria-label="结尾">
-    <div class="catalog"><b>Nº 11</b><span>CLOSING</span></div>
+    <div class="catalog"><b>Nº 12</b><span>CLOSING</span></div>
     <div class="body">
       <div class="eyebrow">结论</div>
       <p class="memory">细粒度矿物靠单一模态搜不准。<strong>RRF</strong> 把图像、属性和硬度过滤合进一个查询，作答准确率随检索增强一路抬升——数字挂在 trapstreet 公开榜上，谁都能复现。</p>
-      <div class="title-mark"><span class="dot"></span><span class="who">石头记 · 谢谢 · github.com/Zhuaiz/elastic-mineral-hackson</span></div>
+      <div class="title-mark"><span class="dot"></span><span class="who">谢谢 · github.com/Zhuaiz/elastic-mineral-hackson</span></div>
     </div>
   </section>
 
