@@ -59,17 +59,52 @@ source .env && .venv/bin/python demo/app.py   # → http://localhost:8000
 
 ## 🚀 复现
 
-```bash
-source .venv/bin/activate && source .env    # ES_URL + ES_USER/ES_PASSWORD
+### 用 trapstreet CLI 直接跑（推荐）
 
+四个检索配置就是 `trap.yaml` 里的四个命名 task，`tp run` 即可复现榜上任意一行：
+
+```bash
+cp .env.example .env && vi .env             # 填 ES_URL + ES_USER/ES_PASSWORD
+pip install -r trap/solutions/requirements.txt   # 只需 elasticsearch 客户端
+source .env
+
+tp run mineral-rrf            # 满配 RRF   → 榜上 0.92 (46/50)
+tp run mineral-closed-book    # 裸 Qwen    → 榜上 0.36 (18/50)
+tp run mineral-bm25           # BM25 单路  → 榜上 0.56 (28/50)
+tp run mineral-image          # 图像单路   → 榜上 0.48 (24/50)
+tp submit mineral-species-id  # 上传自己这次的 run
+```
+
+每个 case：`trap/solutions/solve.py` 读题面 → ES 检索证据 → qwen-plus 作答 → judge 判分，
+作答和检索都在 ES 集群上（本机零模型）。
+
+### 关于"能不能跑出一模一样的结果"
+
+- **判分完全确定**：committed 的作答（`trap/solutions/answers/*.txt`）就是榜上那批 run 的原始答案。
+  无需任何凭证即可本地重判、复现出分毫不差的 36/48/56/92：
+  ```bash
+  for c in closed_book image bm25 rrf_w100; do
+    python trap/solutions/submit.py $c --engine x --strategy x --dry-run
+  done
+  ```
+- **检索完全确定**：题面线索固定、语料索引固定、图像查询向量随仓库提交
+  （`trap/solutions/query_vectors.json`，即榜上那批 run 用的同一批标本照向量），
+  给定同一个 ES 语料，检索结果逐 case 可复现。
+- **作答近似确定**：qwen-plus 用 `temperature=0` 贪心解码，实测逐题重跑与 committed 一致；
+  但 LLM 采样非严格确定，个别 case 可能漂移 ±1~2 题。所以**曲线形状（闭卷<单路<RRF）稳定复现**，
+  绝对题数可能有小幅抖动——这是模型侧的固有噪声，不是 solution 的问题。
+- **唯一前置**：要一个装了 `qwen-plus` 等推理端点、且灌好 `minerals-images` 索引的 ES 集群。
+  榜上用的是私有阿里云托管 ES；换你自己的集群同样能跑，按下方"从零重建"建好索引与端点即可。
+
+### 从零重建语料（可选）
+
+```bash
 python scripts/fetch_properties.py merge    # 1. 属性数据（Wikipedia + Mindat）
 python scripts/embed_images.py              # 2. jina-clip-v2 嵌入（5,498 张）
 python scripts/index_es.py                  # 3. 建索引 + 入库
-python scripts/search_cli.py --text "green banded mineral, hardness 4"   # 4. 验证检索
-
-python trap/eval/ablation.py                          # 检索命中率消融（上表二）
-python trap/eval/accuracy_vs_retrieval.py             # 作答准确率四配置（上表一）
-python trap/solutions/submit.py rrf_w100 --engine ... # 上传 trapstreet 公开榜
+python scripts/setup_inference.py           # 4. 建 ES jinaai 推理端点
+python trap/eval/ablation.py                # 检索命中率消融（上表二）
+python trap/eval/accuracy_vs_retrieval.py   # 作答准确率四配置（上表一）
 ```
 
 ## 📁 目录
@@ -78,9 +113,10 @@ python trap/solutions/submit.py rrf_w100 --engine ... # 上传 trapstreet 公开
 scripts/           数据管线：属性抓取 → 嵌入 → 入库 → 检索 CLI
 demo/              三栏对比演示（标准库 http.server，零依赖）
 agent-builder/     Agent Builder agent + Workflow RRF 工具定义
+trap.yaml          tp run 入口：四个检索配置 = 四个命名 task
 trap/task/         trapstreet 公开任务（50 case + judge，官方 traptask 格式）
 trap/eval/         两层评测 harness（检索消融 + 作答准确率曲线）
-trap/solutions/    四配置作答 + 榜单提交器
+trap/solutions/    solve.py（tp 可跑）+ 四配置作答 + 榜单提交器 + committed 查询向量
 docs/              讲稿 / 演示手册 / 内部运维笔记
 ```
 

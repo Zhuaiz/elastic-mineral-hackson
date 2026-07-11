@@ -78,6 +78,8 @@ def main() -> None:
     ap.add_argument("--model", default="qwen-plus")
     ap.add_argument("--solution-commit", default=None,
                     help="该 solution 的身份 commit（默认 HEAD；不同配置须不同）")
+    ap.add_argument("--dry-run", action="store_true",
+                    help="只本地判分打印分数，不校验推送、不 POST（无需 api_key）")
     args = ap.parse_args()
 
     answers = {}
@@ -113,6 +115,10 @@ def main() -> None:
 
     acc = n_pass / len(cases)
     print(f"[{args.config}] {n_pass}/{len(cases)} = {acc:.1%}")
+
+    if args.dry_run:
+        print("  (--dry-run：仅本地判分，未提交)")
+        return
 
     solution_commit = args.solution_commit or subprocess.run(
         ["git", "rev-parse", "HEAD"], cwd=ROOT,

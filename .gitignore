@@ -13,3 +13,6 @@ trap/solutions/answers/
 trap/solutions/contexts_all.json
 trap/solutions/report_*.json
 trap/solutions/wire_*.json
+
+# tp run 工作区（每次 run 的中间产物，不入库）
+.trap/

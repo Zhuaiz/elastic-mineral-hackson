@@ -1,0 +1,59 @@
+# tp 可跑的 solution 配置（trapstreet CLI）。
+#
+# 四个命名 task = 四种检索强度，各对应榜上一行。跑法：
+#   python3 -m venv .venv && source .venv/bin/activate
+#   pip install -r trap/solutions/requirements.txt   # cmd 里的 python3 = 已激活的 venv
+#   source .env                       # ES_URL + ES_USER/ES_PASSWORD
+#   tp run mineral-rrf                 # 满配 RRF（榜上 0.92）
+#   tp run mineral-closed-book         # 裸 Qwen 基线（榜上 0.36）
+#   tp run mineral-bm25 / mineral-image
+# 注：cmd 用 python3（= PATH 里已激活的 venv 的解释器），不写死 .venv 以便 clone 后可跑。
+#
+# 每个 case：solve.py 读 stdin 题面 → ES 检索证据 → qwen-plus 作答 → stdout 种名，
+# 随后 traptask 的 judge.py 判分。作答走 ES /_inference/completion（本机零模型）。
+# 复现说明与已知不确定性见 README「复现」章节。
+
+tasks:
+  mineral-closed-book:
+    cmd: python3 trap/solutions/solve.py --config closed_book
+    traptask: trap/task
+    inputs:
+      stdin: question.txt
+    timeout: 90
+    metadata:
+      model: qwen-plus·closed-book
+      framework: elastic-agenthack
+      strategy: closed book, no retrieval (bare qwen-plus over 98 candidates)
+
+  mineral-bm25:
+    cmd: python3 trap/solutions/solve.py --config bm25
+    traptask: trap/task
+    inputs:
+      stdin: question.txt
+    timeout: 90
+    metadata:
+      model: qwen-plus·bm25
+      framework: elastic-agenthack
+      strategy: BM25 single-path retrieval over property text + qwen-plus
+
+  mineral-image:
+    cmd: python3 trap/solutions/solve.py --config image
+    traptask: trap/task
+    inputs:
+      stdin: question.txt
+    timeout: 90
+    metadata:
+      model: qwen-plus·image-knn
+      framework: elastic-agenthack
+      strategy: image kNN single-path (jina-clip-v2 specimen photo) + qwen-plus
+
+  mineral-rrf:
+    cmd: python3 trap/solutions/solve.py --config rrf_w100
+    traptask: trap/task
+    inputs:
+      stdin: question.txt
+    timeout: 90
+    metadata:
+      model: qwen-plus·rrf-fusion
+      framework: elastic-agenthack
+      strategy: "Elasticsearch RRF hybrid: BM25 + image kNN + hardness filter (window=100) + qwen-plus"

@@ -13,20 +13,20 @@
 每格：检索证据拼进 prompt → ES 推理端点作答 → judge.score 判分 → 该配置准确率。
 题集读 trapstreet 官方格式（trap/task/inputs/ + expected/）；同时把每配置的
 作答写到 trap/solutions/answers/<config>.txt（id|answer），供 submit.py 上传。
+检索/作答原语在 retrieval.py，与 tp 可跑的 solve.py 共用同一套。
 
 作答后端：ES /_inference/completion/<model>（默认 qwen-plus）。ES 在阿里云
-VPC 内代理 AI 平台，本机只需 ES basic auth —— 不再依赖 Kibana / 浏览器。
+VPC 内代理 AI 平台，本机只需 ES basic auth —— 不依赖浏览器/Kibana。
 
 前置: embed_images + index_es 完成；source .env（ES_URL + ES_USER/ES_PASSWORD）
 用法: .venv/bin/python trap/eval/accuracy_vs_retrieval.py [--limit N] [--configs all]
-输出: 控制台曲线 + trap/eval/results/accuracy_vs_retrieval.json
+输出: 控制台曲线 + trap/eval/results/accuracy_vs_retrieval.json + run_meta.json
      + trap/solutions/answers/<config>.txt
 """
 import argparse
 import datetime
 import json
 import os
-import re
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -37,24 +37,18 @@ import pyarrow.parquet as pq
 ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT / "trap" / "task"))
-from config import EMBED_DIR, INDEX_IMAGES  # noqa: E402
+sys.path.insert(0, str(ROOT / "trap" / "eval"))
+from config import EMBED_DIR  # noqa: E402
 from index_es import es_client  # noqa: E402
 from judge import score  # noqa: E402
+from retrieval import (CONFIGS_ALL, CONFIGS_DEFAULT, CONTEXT_K,  # noqa: E402,F401
+                       build_context, make_answer_fn, parse_clue, retrieve)
 
-CORPUS_SPLIT = "validation"
-CONTEXT_K = 5  # 拼进 prompt 的证据条数
-CONFIGS_DEFAULT = ["closed_book", "bm25", "image", "rrf_w100"]
-CONFIGS_ALL = ["closed_book", "bm25", "image", "rrf_w10", "rrf_w50", "rrf_w100"]
 ANSWER_WORKERS = 4
-ANSWER_RETRIES = 3
 
 
 def load_cases(limit: int | None = None) -> list[dict]:
-    """读 trapstreet 官方格式的题集（inputs/<id>/question.txt + expected/<id>/answer.json）。
-
-    检索线索 = 题面第二段（观察属性行），硬度从中解析——全部来自题面，
-    不查真值属性表。
-    """
+    """读 trapstreet 官方格式的题集（inputs/<id>/question.txt + expected/<id>/answer.json）。"""
     task = ROOT / "trap" / "task"
     cases = []
     for d in sorted((task / "inputs").iterdir()):
@@ -62,91 +56,10 @@ def load_cases(limit: int | None = None) -> list[dict]:
             continue
         question = (d / "question.txt").read_text()
         expected = json.loads((task / "expected" / d.name / "answer.json").read_text())
-        paras = [p.strip() for p in question.split("\n\n") if p.strip()]
-        clue = paras[1].rstrip(".")
-        m = re.search(r"Mohs hardness (\d+(?:\.\d+)?)", clue)
+        clue, hardness = parse_clue(question)
         cases.append({"id": d.name, "question": question, "expected": expected,
-                      "clue": clue, "hardness": float(m.group(1)) if m else None})
+                      "clue": clue, "hardness": hardness})
     return cases[:limit] if limit else cases
-
-
-def _bm25(clue: str) -> dict:
-    return {"standard": {"query": {"bool": {
-        "must": {"multi_match": {"query": clue,
-                                 "fields": ["props_text", "description", "name^2"]}},
-        "filter": {"term": {"split": CORPUS_SPLIT}}}}}}
-
-
-def _knn(vector: list[float], k: int) -> dict:
-    return {"knn": {"field": "image_vector", "query_vector": vector,
-                    "k": k, "num_candidates": max(100, k * 4),
-                    "filter": {"term": {"split": CORPUS_SPLIT}}}}
-
-
-def retrieve(es, cfg: str, clue: str, vector, hardness) -> list[dict]:
-    """返回作为上下文的检索命中（含 species + props_text）。closed_book 返回空。
-
-    vector=None（该种无标本图）时 image 腿退化：image 配置返回空，
-    rrf 配置只剩 BM25 一路。
-    """
-    src = ["species", "props_text"]
-    if cfg == "closed_book":
-        return []
-    if cfg == "bm25":
-        body = {"size": CONTEXT_K, "_source": src,
-                "query": _bm25(clue)["standard"]["query"]}
-    elif cfg == "image":
-        if vector is None:
-            return []
-        body = {"size": CONTEXT_K, "_source": src, **_knn(vector, CONTEXT_K)}
-    elif cfg.startswith("rrf_w"):
-        window = int(cfg.split("_w")[1])
-        retrievers = [_bm25(clue)]
-        if vector is not None:
-            retrievers.append(_knn(vector, window))
-        rrf = {"retrievers": retrievers, "rank_window_size": window, "rank_constant": 20}
-        if window >= 100 and hardness:
-            rrf["filter"] = [{"term": {"split": CORPUS_SPLIT}},
-                             {"range": {"hardness_min": {"lte": hardness}}},
-                             {"range": {"hardness_max": {"gte": hardness}}}]
-        body = {"size": CONTEXT_K, "_source": src, "retriever": {"rrf": rrf}}
-    else:
-        raise ValueError(cfg)
-    return es.search(index=INDEX_IMAGES, **body)["hits"]["hits"]
-
-
-def build_context(hits: list[dict]) -> str:
-    seen, lines = set(), []
-    for h in hits:
-        s = h["_source"]
-        if s["species"] in seen:
-            continue
-        seen.add(s["species"])
-        lines.append(f"- {s['species']}: {s.get('props_text', '')}")
-    return "\n".join(lines)
-
-
-def make_answer_fn(es, model: str):
-    """经 ES 推理端点作答（POST /_inference/completion/<model>），带退避重试。"""
-    def answer(question: str, context: str) -> str:
-        prompt = question if not context else (
-            f"{question}\n\nRetrieved reference candidates:\n{context}\n"
-            "Answer with the species name only.")
-        last_err = None
-        for attempt in range(ANSWER_RETRIES):
-            try:
-                resp = es.perform_request(
-                    "POST", f"/_inference/completion/{model}",
-                    headers={"accept": "application/json",
-                             "content-type": "application/json"},
-                    body={"input": prompt})
-                return resp["completion"][0]["result"].strip()
-            except Exception as e:  # noqa: BLE001 — 网络/限流，重试后仍失败才抛
-                last_err = e
-                time.sleep(2 ** attempt)
-        raise RuntimeError(f"{model} 推理连续 {ANSWER_RETRIES} 次失败: {last_err}")
-
-    return answer
 
 
 def load_image_vectors() -> dict[str, list[float]]:

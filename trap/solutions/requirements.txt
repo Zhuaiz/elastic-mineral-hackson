@@ -1,0 +1,7 @@
+# tp run（solve.py）的最小运行依赖——只需 ES 客户端。
+# 作答与检索都在 ES 集群上完成，本机不加载任何模型。
+elasticsearch==9.4.1
+
+# 从零重建语料（scripts/embed_images.py、index_es.py）另需：
+#   pyarrow  transformers  torch  torchvision  pillow  numpy
+# 见仓库根的完整 .venv；tp run 本身用不到它们。
