@@ -143,6 +143,26 @@
     border: 1px solid var(--line); color: var(--muted); border-radius: 8px; padding: .35rem .7rem;
     font-family: var(--mono); font-size: .7rem; cursor: pointer; }
   .toggle:focus-visible, .slide:focus-visible { outline: 2px solid var(--malachite); outline-offset: 3px; }
+  /* cover / 首页 */
+  .alias { font-family: var(--mono); font-size: clamp(1.1rem, 2.2vw, 1.6rem); font-weight: 500;
+    color: var(--muted); letter-spacing: .04em; margin-left: .9rem; }
+  .idrow { display: flex; gap: .6rem; flex-wrap: wrap; margin-top: 1.5rem; }
+  .idrow span { font-family: var(--mono); font-size: .8rem; color: var(--muted);
+    padding: .45rem .95rem; border: 1px solid var(--line); border-radius: 999px; background: var(--panel); }
+  .marks { display: flex; gap: 1rem; flex-wrap: wrap; align-items: stretch; }
+  .mark { display: flex; align-items: center; gap: 1rem; padding: 1rem 1.4rem;
+    border: 1px solid var(--line); border-radius: 14px; background: var(--panel); box-shadow: var(--shadow); }
+  .mark b { font-size: 1.08rem; font-weight: 700; }
+  .mark small { display: block; font-family: var(--mono); font-size: .7rem; color: var(--faint);
+    margin-top: .25rem; letter-spacing: .08em; }
+  .manta { width: 64px; height: 44px; flex: none;
+    background: linear-gradient(115deg, #a78bfa 8%, #60a5fa 52%, #22d3ee 96%);
+    -webkit-mask: url(assets/trapstreet-manta.png) center / contain no-repeat;
+    mask: url(assets/trapstreet-manta.png) center / contain no-repeat; }
+  .istone { display: flex; align-items: center; padding: .55rem .8rem; background: #fff;
+    border: 1px solid var(--line); border-radius: 10px; flex: none; }
+  .istone img { height: 20px; width: auto; display: block; }
+
   .title-mark { display: flex; align-items: center; gap: .8rem; margin-top: 2rem; }
   .title-mark .dot { width: 12px; height: 12px; border-radius: 50%;
     background: var(--malachite); box-shadow: 0 0 0 4px color-mix(in oklab, var(--malachite) 25%, transparent); }
@@ -157,8 +177,36 @@
 </div>
 <div id="deck" tabindex="0" aria-label="幻灯片，方向键翻页">
 
+  <!-- 00 Cover / 首页 -->
+  <section class="slide active" aria-label="首页">
+    <div class="catalog"><b>SPECIMEN Nº 00</b><span>COVER · 石头记 · 矿物鉴定 AGENT</span></div>
+    <div class="body">
+      <div>
+        <div class="eyebrow">Presenter · 参赛选手</div>
+        <h1>Henson Shu<span class="alias">（zhuai）</span></h1>
+        <p class="lead">一个人完成本次参赛作品全链路：数据管线 → Elasticsearch 融合检索 → 矿物鉴定 Agent → trapstreet 公开评测。</p>
+        <div class="idrow">
+          <span>github.com/Zhuaiz</span>
+          <span>hcshu@dlyai.com</span>
+          <span>AgentHack · Beijing · 2026</span>
+        </div>
+      </div>
+      <hr class="hair">
+      <div class="marks">
+        <div class="mark">
+          <span class="manta" role="img" aria-label="trapstreet logo"></span>
+          <div><b>trapstreet</b><small>公开评测平台 · trapstreet.run</small></div>
+        </div>
+        <div class="mark">
+          <span class="istone"><img src="assets/istone-logo.png" alt="石头记 iSTONE logo" width="103" height="20"></span>
+          <div><b>石头记 iSTONE</b><small>项目名灵感来源</small></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- 01 Title -->
-  <section class="slide active" aria-label="标题">
+  <section class="slide" aria-label="标题">
     <div class="catalog"><b>SPECIMEN Nº 01</b><span>AGENTHACK · BEIJING · 2026</span></div>
     <div class="body">
       <div>
