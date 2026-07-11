@@ -3,6 +3,7 @@
 用法:
   python3 scripts/fetch_properties.py wikipedia   # 98 类摘要 -> data/properties/wikipedia.json
   python3 scripts/fetch_properties.py mindat      # IMA dump + 逐名兜底 -> data/properties/mindat.json
+  python3 scripts/fetch_properties.py localities  # 模式产地坐标 -> data/properties/localities.json
   python3 scripts/fetch_properties.py merge       # 合并 -> data/properties/minerals.json
 仅用标准库，venv 未建好也能跑。
 """
@@ -30,8 +31,23 @@ UA = {"User-Agent": "es-agenthack-mineral-demo/0.1 (hackathon prep)"}
 WIKI_TITLE_OVERRIDES = {"lapis lazuli": "Lapis lazuli"}
 MINDAT_FIELDS = (
     "id,name,ima_formula,mindat_formula,csystem,hmin,hmax,streak,colour,"
-    "lustre,lustretype,dmeas,dcalc,diapheny,cleavage,fracturetype,description_short"
+    "lustre,lustretype,dmeas,dcalc,diapheny,cleavage,fracturetype,description_short,"
+    "elements,sigelements,type_localities"
 )
+# type_localities 仅在 expand 时返回（fields 单独指定拿不到，2026-07-11 实测）
+MINDAT_EXPAND = "type_localities"
+
+# Mindat elements 为空的兜底：自然元素矿物 + 变种/岩石（按母体化学）
+FALLBACK_ELEMENTS = {
+    "gold": ["Au"], "silver": ["Ag"], "copper": ["Cu"],
+    "arsenic": ["As"], "bismuth": ["Bi"],
+    "amber": ["C", "H", "O"],
+    "chrysoprase": ["Si", "O", "Ni"],
+    "flint": ["Si", "O"], "jasper": ["Si", "O"],
+    "lapis lazuli": ["Na", "Ca", "Al", "Si", "O", "S", "Cl"],
+    "limonite": ["Fe", "O", "H"],
+    "nephrite": ["Ca", "Mg", "Fe", "Si", "O", "H"],
+}
 
 
 def get_json(url: str, headers: dict, retries: int = 3) -> dict | None:
@@ -79,7 +95,7 @@ def fetch_mindat() -> None:
     found: dict[str, dict] = {}
 
     url = (f"https://api.mindat.org/v1/geomaterials/?ima=1&fields={MINDAT_FIELDS}"
-           f"&page-size=1500&format=json")
+           f"&expand={MINDAT_EXPAND}&page-size=1500&format=json")
     while url:
         j = get_json(url, headers)
         if not j:
@@ -94,7 +110,7 @@ def fetch_mindat() -> None:
     for name in sorted(wanted - set(found)):
         j = get_json(
             f"https://api.mindat.org/v1/geomaterials/?name={urllib.parse.quote(name)}"
-            f"&fields={MINDAT_FIELDS}&format=json",
+            f"&fields={MINDAT_FIELDS}&expand={MINDAT_EXPAND}&format=json",
             headers,
         )
         results = (j or {}).get("results", [])
@@ -110,10 +126,40 @@ def fetch_mindat() -> None:
     print(f"mindat.json: {len(found)}/{len(wanted)}")
 
 
+def fetch_localities() -> None:
+    """把 mindat.json 里的模式产地 ID 解析成坐标 -> localities.json（Kibana Maps 用）。"""
+    if not MINDAT_API_KEY:
+        sys.exit("先设置 MINDAT_API_KEY 环境变量")
+    headers = {**UA, "Authorization": f"Token {MINDAT_API_KEY}"}
+    mindat = json.load(open(PROPS_DIR / "mindat.json"))
+    loc_ids = sorted({rec["type_localities"][0] for rec in mindat.values()
+                      if rec.get("type_localities")})
+    path = PROPS_DIR / "localities.json"
+    out = json.load(open(path)) if path.exists() else {}
+    todo = [i for i in loc_ids if str(i) not in out]
+    print(f"模式产地 {len(loc_ids)} 个，待抓 {len(todo)}")
+    for lid in todo:
+        j = get_json(
+            f"https://api.mindat.org/v1/localities/{lid}/"
+            f"?fields=id,txt,latitude,longitude,country&format=json",
+            headers,
+        )
+        if j and j.get("latitude") is not None:
+            out[str(lid)] = j
+            print(f"  ok {lid}: {clean(j['txt'])[:60]}")
+        else:
+            print(f"  MISS {lid}")
+        time.sleep(0.25)
+    json.dump(out, open(path, "w"), ensure_ascii=False, indent=1)
+    print(f"localities.json: {len(out)}/{len(loc_ids)}")
+
+
 def merge() -> None:
     wiki = json.load(open(PROPS_DIR / "wikipedia.json"))
     mindat_path = PROPS_DIR / "mindat.json"
     mindat = json.load(open(mindat_path)) if mindat_path.exists() else {}
+    loc_path = PROPS_DIR / "localities.json"
+    localities = json.load(open(loc_path)) if loc_path.exists() else {}
     merged = {}
     for name in all_canonical_names():
         m = mindat.get(name.lower(), {})
@@ -135,7 +181,18 @@ def merge() -> None:
             "fracture": clean(m.get("fracturetype") or ""),
             "short_description": clean(m.get("description_short") or ""),
             "wikipedia": w.get("extract", ""),
+            "elements": m.get("elements") or FALLBACK_ELEMENTS.get(name, []),
         }
+        tl_ids = m.get("type_localities") or []
+        loc = localities.get(str(tl_ids[0])) if tl_ids else None
+        if loc and loc.get("latitude") is not None:
+            rec["type_locality_name"] = clean(loc["txt"])
+            rec["type_locality_country"] = loc.get("country") or ""
+            rec["location"] = {"lat": loc["latitude"], "lon": loc["longitude"]}
+        else:
+            rec["type_locality_name"] = ""
+            rec["type_locality_country"] = ""
+            rec["location"] = None
         parts = [f"{name}."]
         if rec["formula"]:
             parts.append(f"Chemical formula {rec['formula']}.")
@@ -155,9 +212,13 @@ def merge() -> None:
     json.dump(merged, open(PROPS_DIR / "minerals.json", "w"), ensure_ascii=False, indent=1)
     with_mindat = sum(1 for r in merged.values() if r["crystal_system"])
     with_wiki = sum(1 for r in merged.values() if r["wikipedia"])
-    print(f"minerals.json: {len(merged)} 种 | mindat 结构化 {with_mindat} | wikipedia 文本 {with_wiki}")
+    with_elem = sum(1 for r in merged.values() if r["elements"])
+    with_geo = sum(1 for r in merged.values() if r["location"])
+    print(f"minerals.json: {len(merged)} 种 | mindat 结构化 {with_mindat} | "
+          f"wikipedia 文本 {with_wiki} | 元素 {with_elem} | 产地坐标 {with_geo}")
 
 
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else "wikipedia"
-    {"wikipedia": fetch_wikipedia, "mindat": fetch_mindat, "merge": merge}[cmd]()
+    {"wikipedia": fetch_wikipedia, "mindat": fetch_mindat,
+     "localities": fetch_localities, "merge": merge}[cmd]()
