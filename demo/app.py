@@ -23,7 +23,7 @@ from config import INDEX_IMAGES  # noqa: E402
 from index_es import es_client  # noqa: E402
 
 PORT = 8000
-CONTEXT_K = 12
+CONTEXT_K = 60  # 检索窗口要装得下热门种的重复文本（每种最多 ~30 张图共享同一段 props_text）
 _es = None
 
 
@@ -58,7 +58,7 @@ def run_search(mode: str, vector, clue, hardness) -> list[dict]:
             legs.append(bm25_leg(clue))
         if vector is not None:
             legs.append(knn_leg(vector))
-        rrf = {"retrievers": legs, "rank_window_size": 50, "rank_constant": 20}
+        rrf = {"retrievers": legs, "rank_window_size": 100, "rank_constant": 20}
         if hardness:
             rrf["filter"] = [{"range": {"hardness_min": {"lte": hardness}}},
                              {"range": {"hardness_max": {"gte": hardness}}}]
@@ -75,7 +75,12 @@ def run_search(mode: str, vector, clue, hardness) -> list[dict]:
                                 "hardness_min": s.get("hardness_min"),
                                 "hardness_max": s.get("hardness_max")})
         a["votes"] += 1
-    return sorted(agg.values(), key=lambda x: (-x["votes"], -x["score"]))[:8]
+    if mode == "text":
+        # 文本腿：同种所有图共享同一段 props_text，票数只反映图片张数，按 BM25 分数排
+        ranked = sorted(agg.values(), key=lambda x: -x["score"])
+    else:
+        ranked = sorted(agg.values(), key=lambda x: (-x["votes"], -x["score"]))
+    return ranked[:8]
 
 
 def embed(image_b64: str | None, text: str | None):
@@ -139,7 +144,14 @@ class Handler(BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     print(f"矿物鉴定演示: http://localhost:{PORT}  (Ctrl+C 退出)")
-    print("预热 jina-clip-v2 ...")
-    embed(None, "warmup")
-    print("就绪。")
+    print("预热 jina-clip-v2（文本+图像两条路，触发 NaN 守卫）...")
+    try:
+        embed(None, "warmup")
+        from PIL import Image
+        probe = io.BytesIO()
+        Image.new("RGB", (64, 64), (90, 160, 120)).save(probe, "JPEG")
+        embed(base64.b64encode(probe.getvalue()).decode(), None)
+        print("就绪。")
+    except Exception as e:
+        print(f"⚠️ 预热失败（{e}），服务照常启动，请求时守卫会再重试")
     ThreadingHTTPServer(("127.0.0.1", PORT), Handler).serve_forever()

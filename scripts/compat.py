@@ -8,6 +8,10 @@
 import os
 
 os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
+# 模型已全量缓存在本地；离线模式掐掉所有 HF Hub 网络请求——
+# 匿名限流 + 代理(fake-ip)下 hub 校验会无超时挂死进程（现场断网也不再是风险）。
+os.environ.setdefault("HF_HUB_OFFLINE", "1")
+os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
 
 from transformers.models.clip import modeling_clip
 
