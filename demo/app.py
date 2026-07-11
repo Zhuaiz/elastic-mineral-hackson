@@ -167,6 +167,33 @@ def embed(image_b64: str | None, text: str | None):
     return local_embed(image_b64, text)
 
 
+# 讲台一键示例：演示不翻文件对话框。text/hardness 是排练过的观察描述。
+SAMPLE_SPECIES = [
+    ("malachite", "孔雀石", "green banded mineral, light green streak, hardness 4", 4),
+    ("pyrite", "黄铁矿", "brass yellow metallic, greenish black streak", 6.2),
+    ("amethyst", "紫水晶", "purple transparent crystal, white streak, hardness 7", 7),
+    ("gold", "自然金", "golden yellow metallic nugget, very heavy", 2.7),
+    ("azurite", "蓝铜矿", "deep azure blue mineral, light blue streak", 3.7),
+    ("fluorite", "萤石", "cubic transparent crystal, vitreous, hardness 4", 4),
+]
+_samples_cache = None
+
+
+def sample_specimens() -> list[dict]:
+    global _samples_cache
+    if _samples_cache is None:
+        out = []
+        for species, zh, text, hardness in SAMPLE_SPECIES:
+            d = ROOT / "data" / "images" / species
+            thumbs = sorted(d.glob("*.jpg")) if d.exists() else []
+            if thumbs:
+                out.append({"species": species, "zh": zh, "text": text,
+                            "hardness": hardness,
+                            "thumb": f"{species}/{thumbs[0].name}"})
+        _samples_cache = out
+    return _samples_cache
+
+
 class Handler(BaseHTTPRequestHandler):
     def _send(self, code, body, ctype="application/json"):
         data = body if isinstance(body, bytes) else body.encode()
@@ -184,6 +211,8 @@ class Handler(BaseHTTPRequestHandler):
         if path in ("/", "/index.html"):
             self._send(200, (Path(__file__).parent / "index.html").read_bytes(),
                        "text/html; charset=utf-8")
+        elif path == "/samples":
+            self._send(200, json.dumps(sample_specimens(), ensure_ascii=False))
         elif path.startswith("/thumb/"):
             fp = ROOT / "data" / "images" / path[len("/thumb/"):]
             if fp.exists() and fp.suffix == ".jpg":
