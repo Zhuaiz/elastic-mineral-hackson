@@ -85,7 +85,10 @@ def run_search(mode: str, vector, clue, hardness) -> list[dict]:
 
 import os
 
-EMBED_BACKEND = os.environ.get("EMBED_BACKEND", "auto")  # es | local | auto
+# 默认 local（2026-07-11 实测锁定）：① 阿里云 ES 出网到 api.jina.ai 被 DNS 污染，
+# ES 端 jinaai 推理端点建不起来；② Jina API 的 jina-clip-v2 与本地权重不同空间
+# （同图 cosine 仅 0.64，索引是本地算的）——云端嵌入两条路都不可用，误开会静默劣化检索。
+EMBED_BACKEND = os.environ.get("EMBED_BACKEND", "local")  # es | local | auto
 INFERENCE_EP = os.environ.get("INFERENCE_EP", "jina-clip-v2")
 _es_embed_ok: bool | None = None  # auto 模式下记住 ES 端点是否可用
 _IMG_PAYLOAD_STYLES = (
