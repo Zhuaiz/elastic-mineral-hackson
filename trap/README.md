@@ -1,57 +1,62 @@
-# trap/ — 两层评测：证明 RRF，且给出公开可信数字
+# trap/ — 用作答准确率证明 RRF，并给出公开可信数字
 
-矿物鉴定 agent 的评测拆成两层，各自证明不同的东西。**别把两者混为一谈**——
-这是很多黑客松 demo 翻车的地方（"我接了 RAG，分数变高了" ≠ "我的融合检索有用"）。
+矿物鉴定 agent 的评测围绕一个核心命题：**检索越强，模型作答越准；RRF 融合处准确率最高。**
+这条曲线爬升本身就是 RRF 有用的证据，而且是用最有说服力的指标（下游作答准确率）说话。
 
-## 层一 · `eval/` — RRF 消融实验（技术证据）
+## 一个被修正的认知
 
-**证明的命题：融合检索 > 任何单路检索。**
+> "trapstreet 是闭卷模型评测，天生测不了 RRF" —— **这句话是错的（说太绝了）。**
 
-`ablation.py` 对同一批"没见过的"标本，用三种策略检索已知标本库、投票定种，比准确率：
+准确说法：*单个*固定任务、配*单个*固定参考文档，确实没法在内部比较检索策略。
+**但**把同一套题在**不同检索配置**下各跑一遍、看 judge 打出的**作答准确率曲线**，
+就能干净地证明 RRF —— 因为"给模型的证据质量 → 作答对错"正是 trapstreet 的判分机制在做的事。
+检索配置是变量，judge 准确率是因变量，曲线爬升即结论。
 
-| 策略 | 用到什么 | 预期 |
+## 层一 · `eval/` — 作答准确率 vs 检索强度（主证据）
+
+`accuracy_vs_retrieval.py`：固定题集 + 固定 judge，只变"喂给模型的检索证据"：
+
+| 配置 | 证据来源 | 预期准确率 |
 |---|---|---|
-| `image_only` | 只有照片（jina-clip-v2 图像向量 kNN）| 中等（细粒度矿物视觉歧义大，实测图搜图 top-1 ~25%）|
-| `text_only` | 只有野外观察属性（BM25）| 中等（很多矿物共享"硬度7/白条痕/玻璃光泽"）|
-| **`rrf_fusion`** | 照片 + 属性 + 硬度过滤（一个 RRF retriever）| **最高** |
+| `closed_book` | 无（模型裸答）| 低基线 |
+| `bm25` | 只用野外属性文字（BM25 单路）| 中 |
+| `image` | 只用标本照片（图像 kNN 单路）| 中 |
+| `rrf_w10` → `rrf_w50` → `rrf_w100` | RRF 融合，检索窗口递增（+硬度过滤）| **最高、趋于平台** |
 
-只要 `rrf_fusion` 的 top-1 明显高于两条单路，RRF 的价值就用**数字**证明了。
-这是"every number on a board is a real run, not a claim"。
+指标 = `task/judge.py` 判的作答准确率（与 trapstreet 完全同一把尺）。
+预期出一条"闭卷 → 单路 → RRF"逐级抬升的曲线。**这就是 RRF 有用的数字证据。**
 
-跑法（需先 embed + index 完成、ES 就绪）：
+> 诚实提醒：准确率是**爬升到平台**，不是无限涨——上下文喂太多会引入噪声。
+> 画成曲线让它自己说话，比断言"越多越好"更可信。
+
+跑法（需 embed + index 完成、ES 就绪、配好作答后端）：
 ```bash
-source .env && .venv/bin/python trap/eval/ablation.py --limit 300
+source .env && .venv/bin/python trap/eval/accuracy_vs_retrieval.py --limit 50
 ```
 
-**为什么消融必须在自己的 harness 里做**：trapstreet 是"闭卷模型 + 固定参考文档 → 作答"
-的评测，参考文档在出题时就定死了，内部不做实时检索。所以它**天生无法比较检索策略**。
-RRF 是检索策略，必须在能实时切换检索方式的地方（这里）测。
+`ablation.py` 是廉价补充：只测**检索命中率**（图像/文本/RRF 三路 top-1，不调模型），
+用来快速确认检索信号存在；作答准确率曲线才是对外呈现的主角。
 
-## 层二 · `task/` — trapstreet 公开任务（可信数字）
+## 层二 · `task/` — trapstreet 公开榜（可信数字）
 
-**证明的命题：接了 Elastic 检索的 agent >> 裸闭卷模型。**
+同一套题、同一个 judge，把层一里的两个头条配置搬到 trapstreet 公开榜上跑：
+- **`closed_book`**（裸模型）vs **`rrf_w100`**（满配 RRF agent）
+两个"真实的、不是嘴说的"数字，公开可验证。
 
-- `task/cases/*.json` — 50 道题，题面是野外可观察属性（晶系/硬度/条痕/颜色/光泽），
-  **刻意不含化学式**（化学式≈送答案，会抹平差值）。
-- `task/reference.md` — 参考文档，仅取 Wikipedia 摘要（CC BY-SA 4.0，已署名），公开安全。
+- `task/cases/*.json` — 50 题，题面是野外可观察属性，**刻意不含化学式**（化学式≈送答案）。
+- `task/reference.md` — 参考文档仅取 Wikipedia 摘要（CC BY-SA 4.0，已署名），公开安全。
 - `task/judge.py` — 种名归一化后精确匹配（creedite/credit、stibnite/antimonite 等收敛）。
 
-在 trapstreet 上跑两轨：裸模型闭卷 vs 你的 Elastic RAG agent（`/api/agent_builder/converse`），
-差值就是系统价值，公开可验证。这给评委一个"真实的、不是嘴说的"头条数字。
-
-生成任务：
-```bash
-python3 trap/task/make_cases.py
-```
+生成任务：`python3 trap/task/make_cases.py`
 
 ## 数据与许可
 
 - 题面属性值是客观事实（硬度、条痕色），不受版权限制。
 - `reference.md` 仅用 Wikipedia（CC BY-SA 4.0）。**不含 Mindat 数据**（CC-BY-NC-SA，不可再分发）
-  与无授权标本图片——这两者只在本地的层一消融与实时 agent 演示中使用，不进公开仓库。
+  与无授权标本图片——这两者只在本地层一（消融/准确率曲线）与实时 agent 演示中使用。
 
 ## 注册到 trapstreet
 
-用本机 `trapstreet-task-add` skill，从本仓库的 `trap/task` 目录 URL 注册。
+用本机 `trapstreet-task-add` skill，从本仓库 `trap/task` 目录 URL 注册。
 目录格式（task.json / cases / reference.md / judge.py）在注册前需对照 trapstreet
 现有任务（如 financebench）实际布局校准。
