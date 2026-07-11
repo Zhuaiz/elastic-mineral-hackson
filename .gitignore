@@ -8,3 +8,7 @@ __pycache__/
 data/properties/
 trap/eval/results/
 trap/eval/*.parquet
+trap/solutions/_work/
+trap/solutions/answers/
+trap/solutions/contexts_all.json
+trap/solutions/report_*.json
