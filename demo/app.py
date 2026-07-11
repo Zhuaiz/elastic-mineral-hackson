@@ -83,16 +83,85 @@ def run_search(mode: str, vector, clue, hardness) -> list[dict]:
     return ranked[:8]
 
 
-def embed(image_b64: str | None, text: str | None):
+import os
+
+EMBED_BACKEND = os.environ.get("EMBED_BACKEND", "auto")  # es | local | auto
+INFERENCE_EP = os.environ.get("INFERENCE_EP", "jina-clip-v2")
+_es_embed_ok: bool | None = None  # auto 模式下记住 ES 端点是否可用
+_IMG_PAYLOAD_STYLES = (
+    lambda b64: {"input": [{"image": f"data:image/jpeg;base64,{b64}"}]},
+    lambda b64: {"input": [{"content": {"type": "image", "format": "base64",
+                                        "value": f"data:image/jpeg;base64,{b64}"}}]},
+)
+
+
+def _extract_vec(node):
+    if isinstance(node, list):
+        if node and all(isinstance(x, (int, float)) for x in node) and len(node) >= 64:
+            return [float(x) for x in node]
+        for item in node:
+            if (v := _extract_vec(item)) is not None:
+                return v
+    elif isinstance(node, dict):
+        for v in node.values():
+            if (r := _extract_vec(v)) is not None:
+                return r
+    return None
+
+
+def es_embed(image_b64: str | None, text: str | None) -> list[float]:
+    """走 ES 推理端点（服务端调 jina-clip-v2），笔记本不跑模型。"""
+    def call(payload):
+        r = es().perform_request(
+            "POST", f"/_inference/embedding/{INFERENCE_EP}", body=payload,
+            headers={"content-type": "application/json",
+                     "accept": "application/json"})
+        vec = _extract_vec(r.body)
+        if vec is None or len(vec) < 64:
+            raise RuntimeError("推理端点响应里没有向量")
+        return vec
+    if image_b64:
+        b64 = image_b64.split(",")[-1]
+        last = None
+        for style in _IMG_PAYLOAD_STYLES:
+            try:
+                return call(style(b64))
+            except Exception as e:
+                last = e
+        raise last
+    return call({"input": [text]})
+
+
+def local_embed(image_b64: str | None, text: str | None) -> list[float]:
     from embedder import encode_images, encode_texts
     if image_b64:
         from PIL import Image
         raw = base64.b64decode(image_b64.split(",")[-1])
         img = Image.open(io.BytesIO(raw)).convert("RGB")
         return encode_images([img])[0].tolist()
-    if text:
-        return encode_texts([text])[0].tolist()
-    return None
+    return encode_texts([text])[0].tolist()
+
+
+def embed(image_b64: str | None, text: str | None):
+    global _es_embed_ok
+    if not image_b64 and not text:
+        return None
+    if EMBED_BACKEND == "local":
+        return local_embed(image_b64, text)
+    if EMBED_BACKEND == "es" or _es_embed_ok in (None, True):
+        try:
+            vec = es_embed(image_b64, text)
+            if _es_embed_ok is None:
+                print("嵌入后端: ES 推理端点 ✓（全程 Elastic API）")
+            _es_embed_ok = True
+            return vec
+        except Exception as e:
+            if EMBED_BACKEND == "es":
+                raise
+            if _es_embed_ok is None:
+                print(f"ES 推理端点不可用（{str(e)[:80]}），回落本地模型")
+            _es_embed_ok = False
+    return local_embed(image_b64, text)
 
 
 class Handler(BaseHTTPRequestHandler):

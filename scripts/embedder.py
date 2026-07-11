@@ -25,11 +25,11 @@ def load_model():
             from transformers import AutoModel
             _device = os.environ.get("EMBED_DEVICE") or (
                 "mps" if torch.backends.mps.is_available() else "cpu")
-            # fp16 内存减半（16GB 机器上必须），CPU 走 fp32 保数值稳定
-            dtype = torch.float16 if _device == "mps" else torch.float32
-            print(f"loading jinaai/jina-clip-v2 on {_device} ({dtype}) ...")
+            # 保持 fp32：fp16 会让 xlm-roberta 文本塔数值溢出（实测全 NaN）。
+            # 内存压力靠"查询走 ES 推理端点、本地模型仅兜底懒加载"化解。
+            print(f"loading jinaai/jina-clip-v2 on {_device} ...")
             _model = AutoModel.from_pretrained(
-                "jinaai/jina-clip-v2", trust_remote_code=True, dtype=dtype
+                "jinaai/jina-clip-v2", trust_remote_code=True
             ).to(_device).eval()
     return _model
 
@@ -43,13 +43,6 @@ def _fall_back_to_cpu() -> None:
             _device = "cpu"
 
 
-def _reload_model() -> None:
-    """内存紧张时 CPU 推理也可能出 NaN；释放后整模重载是最后一道防线。"""
-    global _model
-    with _lock:
-        print("⚠️ CPU 重算仍 NaN，释放并重载模型 ...")
-        _model = None
-    load_model()
 
 
 def _normalize(vecs) -> np.ndarray:
@@ -62,12 +55,10 @@ def _encode_guarded(encode_once) -> np.ndarray:
     if np.isnan(arr).any():
         _fall_back_to_cpu()
         arr = np.asarray(encode_once(), dtype=np.float32)
-    if np.isnan(arr).any():
-        _reload_model()
-        arr = np.asarray(encode_once(), dtype=np.float32)
         if np.isnan(arr).any():
             raise RuntimeError(
-                "编码连续 3 次输出 NaN——多为内存耗尽，关掉多余的大进程后重试")
+                "MPS 与 CPU 编码均输出 NaN——多为内存耗尽，"
+                "关掉多余大进程后重启本服务")
     return _normalize(arr)
 
 
