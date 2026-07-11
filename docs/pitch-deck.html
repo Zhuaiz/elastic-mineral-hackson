@@ -101,12 +101,13 @@
     font-variant-numeric: tabular-nums; }
   .note { font-size: .82rem; color: var(--faint); font-family: var(--mono); margin-top: .8rem; }
 
-  /* brand mark */
-  .brand { display: flex; align-items: center; gap: 1.1rem; margin-bottom: 2.2rem; }
-  .brand .gem { width: 58px; height: 58px; flex: none; }
-  .brand .nm { font-size: 2.1rem; font-weight: 800; letter-spacing: .14em; line-height: 1; }
-  .brand .sub { font-family: var(--mono); font-size: .7rem; letter-spacing: .24em;
-    color: var(--muted); margin-top: .45rem; text-transform: uppercase; }
+  /* corner chrome: theme toggle + 石头记 brand tag (致敬灵感来源) */
+  .corner { position: fixed; top: 1rem; right: 1.2rem; display: flex; gap: .5rem;
+    align-items: stretch; z-index: 10; }
+  .brandtag { display: flex; align-items: center; gap: .45rem; padding: .35rem .75rem;
+    border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+  .brandtag .gem { width: 15px; height: 15px; flex: none; }
+  .brandtag span { font-size: .74rem; letter-spacing: .16em; color: var(--muted); font-weight: 600; }
 
   /* architecture diagram */
   .arch { flex: 1; display: flex; align-items: center; min-height: 0; }
@@ -139,9 +140,9 @@
   .counter { font-family: var(--mono); font-size: .74rem; color: var(--faint); letter-spacing: .1em; }
   .hint { position: fixed; bottom: .8rem; left: 50%; transform: translateX(-50%);
     font-family: var(--mono); font-size: .68rem; color: var(--faint); letter-spacing: .12em; }
-  .toggle { position: fixed; top: 1rem; right: 1.2rem; pointer-events: auto; background: var(--panel);
+  .toggle { pointer-events: auto; background: var(--panel);
     border: 1px solid var(--line); color: var(--muted); border-radius: 8px; padding: .35rem .7rem;
-    font-family: var(--mono); font-size: .7rem; cursor: pointer; z-index: 10; }
+    font-family: var(--mono); font-size: .7rem; cursor: pointer; }
   .toggle:focus-visible, .slide:focus-visible { outline: 2px solid var(--malachite); outline-offset: 3px; }
   .title-mark { display: flex; align-items: center; gap: .8rem; margin-top: 2rem; }
   .title-mark .dot { width: 12px; height: 12px; border-radius: 50%;
@@ -149,7 +150,16 @@
   .title-mark .who { font-family: var(--mono); font-size: .8rem; color: var(--muted); letter-spacing: .06em; }
 </style>
 
-<button class="toggle" id="themeBtn" aria-label="切换主题">◐ theme</button>
+<div class="corner">
+  <button class="toggle" id="themeBtn" aria-label="切换主题">◐ theme</button>
+  <div class="brandtag" title="项目名灵感来自石头记品牌">
+    <svg class="gem" viewBox="0 0 48 48" aria-hidden="true">
+      <path d="M14 8 L34 8 L44 20 L24 44 L4 20 Z" fill="color-mix(in oklab, var(--malachite) 14%, transparent)" stroke="var(--malachite)" stroke-width="2.4" stroke-linejoin="round"/>
+      <path d="M4 20 H44 M14 8 L18 20 M34 8 L30 20 M18 20 L24 44 M30 20 L24 44" stroke="var(--malachite)" stroke-width="1.5" fill="none" stroke-linejoin="round" opacity=".8"/>
+    </svg>
+    <span>石头记</span>
+  </div>
+</div>
 <div id="deck" tabindex="0" aria-label="幻灯片，方向键翻页">
 
   <!-- 01 Title -->
@@ -157,17 +167,7 @@
     <div class="catalog"><b>SPECIMEN Nº 01</b><span>AGENTHACK · BEIJING · 2026</span></div>
     <div class="body">
       <div>
-        <div class="brand">
-          <svg class="gem" viewBox="0 0 48 48" aria-hidden="true">
-            <path d="M14 8 L34 8 L44 20 L24 44 L4 20 Z" fill="color-mix(in oklab, var(--malachite) 14%, transparent)" stroke="var(--malachite)" stroke-width="2.4" stroke-linejoin="round"/>
-            <path d="M4 20 H44 M14 8 L18 20 M34 8 L30 20 M18 20 L24 44 M30 20 L24 44" stroke="var(--malachite)" stroke-width="1.5" fill="none" stroke-linejoin="round" opacity=".8"/>
-          </svg>
-          <div>
-            <div class="nm">石头记</div>
-            <div class="sub">Shi Tou Ji · Mineral Agent</div>
-          </div>
-        </div>
-        <div class="eyebrow">Elastic · 融合检索 · AI Agent</div>
+        <div class="eyebrow">石头记 · Elastic 融合检索 · AI Agent</div>
         <h1>看一块石头，<br>就说出它是什么矿物。</h1>
         <p class="lead">一个用 Elasticsearch 融合检索（RRF）驱动的矿物鉴定 Agent —— 照片、属性、硬度，一次查询融合定种。</p>
         <div class="title-mark">
