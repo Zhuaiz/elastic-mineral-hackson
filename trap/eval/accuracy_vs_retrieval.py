@@ -191,8 +191,10 @@ def main() -> None:
         t0 = time.time()
         with ThreadPoolExecutor(max_workers=ANSWER_WORKERS) as pool:
             rows = list(pool.map(run_case, cases))
+        # 压平换行：answers 文件是 id|answer 每行一条，多行作答会破坏格式
+        # （judge 对 >8 词的长文一律 0 分，压平不改变判分结果）
         (ans_dir / f"{cfg}.txt").write_text(
-            "".join(f"{c['id']}|{a}\n" for c, a, _ in rows))
+            "".join(f"{c['id']}|{' '.join(a.split())}\n" for c, a, _ in rows))
         acc = sum(m["score"] for _, _, m in rows) / len(rows)
         result[cfg] = round(acc, 4)
         bar = "█" * round(acc * 20)
