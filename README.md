@@ -39,15 +39,35 @@ python trap/task/make_cases.py            # trapstreet 公开任务（闭卷 vs 
 source .env && .venv/bin/python trap/eval/ablation.py   # RRF 消融（证明融合有用）
 ```
 
+## 集群方案（2026-07-08 已查证，见下方冒烟测试）
+
+**主选：阿里云 ES 9.3.2（黑客松方案一，预配置 + 专属 Token）——已确认满足 5/6 需求：**
+- ✅ RRF retriever（阿里云特性矩阵：8.17 起 GA；官方 RAG 教程直接用 rrf DSL）
+- ✅ Agent Builder（阿里云 9.3 发版头条，需 9.3.2+；Kibana → Elasticsearch > Agents）
+- ✅ Workflows（9.3 含，但**技术预览且默认隐藏，需在 Kibana 设置手动开启**——刘晓国文章 162767283 有截图）
+- ✅ dense_vector/kNN（免费级）
+- ✅ Qwen LLM connector：AI Connector → 服务类型 OpenAI → URL `http://{模型服务接入地址}/compatible-mode/v1/chat/completions`，
+  Model 用 qwen-plus/qwen3-max（**别用 ops-qwen-turbo**），API key 在 实例控制台 → AI 服务中心 → 模型管理（文章 162036514）
+- ❌ **EIS 没有**（Elastic Cloud 专属）→ 预置 `.jina-clip-v2` 端点不存在。影响与替代见下。
+
+**兜底：Elastic Cloud 14 天试用** https://cloud.elastic.co/registration （全功能含 EIS；阿里云现场出问题时 15 分钟内切换）
+
+**开场 5 分钟冒烟测试（三连，任一失败立刻切兜底别调试）：**
+1. `GET /_license?accept_enterprise=true`
+2. 发一个最小 rrf retriever 查询
+3. Kibana 打开 Agent Builder + `POST /api/agent_builder/converse`
+
+**EIS 缺席的影响**：入库嵌入本来就在本地做（不受影响）；查询时嵌入三选一——
+(a) 演示 UI 本地嵌入后直连 ES（`search_cli.py` 现成，最稳）；(b) Workflow 加 HTTP 步骤调 Jina API（现场验证）；
+(c) 文本语义腿用阿里云 ops-text-embedding-002 semantic_text（注意：与 jina-clip-v2 不同向量空间，不能混用同一字段；
+bulk 时 chunk ≤25，阿里云推理端点超 ~32 条会 500——刘晓国文章 162767283 实测）。
+
 ## 人工待办（只有你能做）
 
-- [ ] **Elastic Cloud 14 天试用注册** https://cloud.elastic.co/registration （无需信用卡）
-      建最新版 Hosted 部署 → 拿 ES endpoint URL + API key → `export ES_URL=... ES_API_KEY=...`
-      验证：`GET /_license` 应为 trial（全功能，含 RRF/Agent Builder/Workflows/EIS）
-- [ ] **Mindat API key** https://www.mindat.org/ 注册 → 个人设置拿 token → `export MINDAT_API_KEY=...`
-- [ ] （可选）HF token：本机没有，匿名下载已成功，暂不需要
-- [ ] （可选）Jina API key：本地 MPS 嵌入为主，不依赖
-- [ ] Kibana 里确认 Agent Builder 可见（ES solution view 默认启用），配 LLM connector（试用含 Elastic Managed LLM）
+- [ ] 开通阿里云 ES 试用 https://free.aliyun.com/?productCode=elasticsearch （或等黑客松专属 Token）→ `export ES_URL=... ES_API_KEY=...`
+- [x] **Mindat API key** 已配置（.env）
+- [ ] （可选）HF token：匿名下载已成功，暂不需要
+- [ ] （可选）Jina API key：若走 Workflow 查询时嵌入路线才需要
 
 ## 目录
 

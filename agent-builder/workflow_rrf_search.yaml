@@ -1,7 +1,13 @@
 # Elastic Workflow：矿物融合检索工具（现场注册为 Agent Builder Workflow 工具）
-# 架构：查询文本 --EIS .jina-clip-v2--> 向量 --> RRF(BM25+kNN) --> top 证据
+# 架构：查询文本 --嵌入端点--> 向量 --> RRF(BM25+kNN) --> top 证据
 # 语法基准：CSDN 159643240（DSL via Workflow）；step 间 Liquid 模板取值。
-# ⚠️ 现场校准点：steps 输出引用路径、EIS 端点名（GET _inference 确认）、license=trial。
+# ⚠️ 平台差异（2026-07-08 查证）：
+#   - Elastic Cloud：embed_query 用预置 EIS 端点 /_inference/embedding/.jina-clip-v2（如下）。
+#   - 阿里云 ES 9.3.2：**没有 EIS**，.jina-clip-v2 不存在。改为 HTTP 步骤直调 Jina API
+#     （需 JINA_API_KEY），或放弃 Workflow 内嵌入、由演示 UI 本地嵌入后直查（search_cli.py 路线）。
+#     不要用 ops-text-embedding-002 顶替——与索引里的 jina-clip-v2 不是同一向量空间。
+#   - 阿里云 9.3 的 Workflows 是技术预览且默认隐藏，先在 Kibana 设置里开启（CSDN 162767283）。
+# ⚠️ 现场校准点：steps 输出引用路径、嵌入端点名（GET _inference 确认）、license 冒烟测试。
 version: "1"
 name: mineral_hybrid_search
 description: >
