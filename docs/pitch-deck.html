@@ -1,0 +1,346 @@
+<title>矿物鉴定 Agent · Elastic 融合检索 · Pitch</title>
+<style>
+  :root {
+    --ground: #0e1a17; --panel: #14241f; --panel-2: #1a2e28;
+    --ink: #eaf1ec; --muted: #8aa79b; --faint: #5a6f66;
+    --malachite: #1fc98a; --azurite: #4a97d6; --streak: #d8c07f;
+    --line: #2a4038; --line-bright: #365046;
+    --good: #1fc98a; --warn: #d8c07f;
+    --shadow: 0 24px 60px -20px rgba(0,0,0,.6);
+    --mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, monospace;
+    --sans: system-ui, "PingFang SC", "Hiragino Sans GB", sans-serif;
+  }
+  :root[data-theme="light"] {
+    --ground: #eef1ec; --panel: #ffffff; --panel-2: #f4f6f1;
+    --ink: #16241f; --muted: #4e6459; --faint: #8299;
+    --line: #d6ddd5; --line-bright: #c2ccc0;
+    --shadow: 0 20px 50px -24px rgba(20,40,32,.25);
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --ground: #eef1ec; --panel: #ffffff; --panel-2: #f4f6f1;
+      --ink: #16241f; --muted: #4e6459; --faint: #839;
+      --line: #d6ddd5; --line-bright: #c2ccc0;
+      --shadow: 0 20px 50px -24px rgba(20,40,32,.25);
+    }
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; }
+  body { background: var(--ground); color: var(--ink); font-family: var(--sans);
+    overflow: hidden; -webkit-font-smoothing: antialiased; }
+  #deck { height: 100vh; width: 100vw; }
+  .slide { position: absolute; inset: 0; display: none; flex-direction: column;
+    padding: clamp(2rem, 5vw, 5.5rem); opacity: 0; }
+  .slide.active { display: flex; animation: rise .5s cubic-bezier(.16,1,.3,1); }
+  @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .slide.active { animation: none; } }
+
+  /* specimen-label chrome */
+  .catalog { font-family: var(--mono); font-size: .72rem; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--faint); display: flex; gap: 1rem; align-items: center; }
+  .catalog b { color: var(--malachite); font-weight: 600; }
+  .eyebrow { font-family: var(--mono); font-size: .78rem; letter-spacing: .18em;
+    text-transform: uppercase; color: var(--malachite); margin-bottom: 1.1rem; }
+  h1 { font-size: clamp(2.4rem, 6vw, 5rem); font-weight: 800; line-height: 1.02;
+    letter-spacing: -.02em; text-wrap: balance; }
+  h2 { font-size: clamp(1.8rem, 4vw, 3.1rem); font-weight: 750; line-height: 1.08;
+    letter-spacing: -.015em; text-wrap: balance; }
+  .lead { font-size: clamp(1.05rem, 1.8vw, 1.4rem); color: var(--muted); line-height: 1.55;
+    max-width: 46ch; margin-top: 1.2rem; }
+  .body { display: flex; flex-direction: column; justify-content: center; flex: 1; gap: 1.4rem; }
+  .hair { height: 1px; background: var(--line); border: 0; }
+  strong.hl { color: var(--malachite); font-weight: 700; }
+  strong.hl2 { color: var(--azurite); font-weight: 700; }
+  strong.hl3 { color: var(--streak); font-weight: 700; }
+
+  .rows { display: flex; flex-direction: column; gap: .9rem; margin-top: .5rem; }
+  .lyr { display: grid; grid-template-columns: auto 1fr; gap: 1.1rem; align-items: baseline;
+    padding: 1rem 1.2rem; background: var(--panel); border: 1px solid var(--line);
+    border-radius: 14px; box-shadow: var(--shadow); }
+  .lyr .n { font-family: var(--mono); color: var(--malachite); font-size: .9rem; font-weight: 600; }
+  .lyr h3 { font-size: 1.15rem; font-weight: 700; margin-bottom: .2rem; }
+  .lyr p { color: var(--muted); font-size: .95rem; line-height: 1.5; }
+
+  /* fusion diagram */
+  .fusion { display: grid; grid-template-columns: 1fr auto 1fr; gap: 1.5rem; align-items: center; margin-top: 1rem; }
+  .legs { display: flex; flex-direction: column; gap: .8rem; }
+  .leg { padding: .85rem 1.1rem; border-radius: 12px; border: 1px solid var(--line);
+    background: var(--panel); font-size: .95rem; display: flex; align-items: center; gap: .7rem; }
+  .leg .chip { font-family: var(--mono); font-size: .7rem; padding: .12rem .5rem; border-radius: 999px;
+    background: var(--panel-2); color: var(--muted); }
+  .leg.img { border-left: 3px solid var(--azurite); }
+  .leg.txt { border-left: 3px solid var(--streak); }
+  .leg.flt { border-left: 3px solid var(--muted); }
+  .arrow { font-family: var(--mono); color: var(--faint); font-size: 1.4rem; }
+  .fuse-out { padding: 1.4rem 1.3rem; border-radius: 16px; border: 1.5px solid var(--malachite);
+    background: linear-gradient(160deg, var(--panel-2), var(--panel)); box-shadow: var(--shadow); }
+  .fuse-out .k { font-family: var(--mono); color: var(--malachite); font-size: .72rem;
+    letter-spacing: .1em; text-transform: uppercase; }
+  .fuse-out .v { font-size: 1.5rem; font-weight: 750; margin-top: .3rem; }
+
+  /* ambiguity chips */
+  .amb { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: .5rem; }
+  .amb .grp { flex: 1; min-width: 220px; padding: 1.1rem; border-radius: 14px;
+    background: var(--panel); border: 1px solid var(--line); }
+  .amb .grp .t { font-family: var(--mono); font-size: .72rem; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--faint); margin-bottom: .5rem; }
+  .amb .grp .items { font-size: 1.15rem; font-weight: 650; }
+  .amb .grp .why { color: var(--muted); font-size: .9rem; margin-top: .4rem; }
+
+  /* proof chart */
+  .chart { display: grid; grid-template-columns: 1fr; gap: .5rem; margin-top: .5rem; }
+  .bar-row { display: grid; grid-template-columns: 130px 1fr 56px; align-items: center; gap: 1rem; }
+  .bar-row .lbl { font-family: var(--mono); font-size: .82rem; color: var(--muted); text-align: right; }
+  .bar-track { height: 26px; background: var(--panel-2); border-radius: 7px; overflow: hidden;
+    border: 1px solid var(--line); }
+  .bar-fill { height: 100%; border-radius: 6px 0 0 6px; background: var(--line-bright);
+    transition: width .6s cubic-bezier(.16,1,.3,1); }
+  .bar-fill.peak { background: linear-gradient(90deg, var(--azurite), var(--malachite)); }
+  .bar-row .pct { font-family: var(--mono); font-size: .9rem; font-weight: 600; text-align: right;
+    font-variant-numeric: tabular-nums; }
+  .note { font-size: .82rem; color: var(--faint); font-family: var(--mono); margin-top: .8rem; }
+
+  .stackgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap: 1rem; margin-top: .5rem; }
+  .stackgrid .c { padding: 1.1rem; border-radius: 14px; background: var(--panel); border: 1px solid var(--line); }
+  .stackgrid .c .k { font-family: var(--mono); font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; color: var(--malachite); }
+  .stackgrid .c .v { font-size: 1.05rem; font-weight: 650; margin-top: .35rem; }
+  .stackgrid .c .d { color: var(--muted); font-size: .85rem; margin-top: .25rem; line-height: 1.45; }
+
+  .uses { display: flex; gap: .6rem; flex-wrap: wrap; margin-top: 1rem; }
+  .uses span { padding: .5rem 1rem; border-radius: 999px; background: var(--panel);
+    border: 1px solid var(--line); font-size: .95rem; }
+  .memory { font-size: clamp(1.2rem, 2.4vw, 1.9rem); font-weight: 700; line-height: 1.4;
+    text-wrap: balance; max-width: 30ch; }
+  .memory strong { color: var(--malachite); }
+
+  /* footer / progress */
+  .foot { position: fixed; bottom: 0; left: 0; right: 0; display: flex; align-items: center;
+    justify-content: space-between; padding: .9rem clamp(2rem,5vw,5.5rem); pointer-events: none; }
+  .mohs { display: flex; gap: 6px; }
+  .mohs i { width: 22px; height: 5px; border-radius: 3px; background: var(--line);
+    transition: background .3s; }
+  .mohs i.on { background: var(--malachite); }
+  .counter { font-family: var(--mono); font-size: .74rem; color: var(--faint); letter-spacing: .1em; }
+  .hint { position: fixed; bottom: .8rem; left: 50%; transform: translateX(-50%);
+    font-family: var(--mono); font-size: .68rem; color: var(--faint); letter-spacing: .12em; }
+  .toggle { position: fixed; top: 1rem; right: 1.2rem; pointer-events: auto; background: var(--panel);
+    border: 1px solid var(--line); color: var(--muted); border-radius: 8px; padding: .35rem .7rem;
+    font-family: var(--mono); font-size: .7rem; cursor: pointer; z-index: 10; }
+  .toggle:focus-visible, .slide:focus-visible { outline: 2px solid var(--malachite); outline-offset: 3px; }
+  .title-mark { display: flex; align-items: center; gap: .8rem; margin-top: 2rem; }
+  .title-mark .dot { width: 12px; height: 12px; border-radius: 50%;
+    background: var(--malachite); box-shadow: 0 0 0 4px color-mix(in oklab, var(--malachite) 25%, transparent); }
+  .title-mark .who { font-family: var(--mono); font-size: .8rem; color: var(--muted); letter-spacing: .06em; }
+</style>
+
+<button class="toggle" id="themeBtn" aria-label="切换主题">◐ theme</button>
+<div id="deck" tabindex="0" aria-label="幻灯片，方向键翻页">
+
+  <!-- 01 Title -->
+  <section class="slide active" aria-label="标题">
+    <div class="catalog"><b>SPECIMEN Nº 01</b><span>AGENTHACK · BEIJING · 2026</span></div>
+    <div class="body">
+      <div>
+        <div class="eyebrow">Elastic · 融合检索 · AI Agent</div>
+        <h1>看一块石头，<br>就说出它是什么矿物。</h1>
+        <p class="lead">一个用 Elasticsearch 融合检索（RRF）驱动的矿物鉴定 Agent —— 照片、属性、硬度，一次查询融合定种。</p>
+        <div class="title-mark">
+          <span class="dot"></span>
+          <span class="who">jina-clip-v2 图文同空间 · 阿里云 ES 9.3.2 · Agent Builder · trapstreet 公开评测</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 02 Problem -->
+  <section class="slide" aria-label="问题">
+    <div class="catalog"><b>Nº 02</b><span>THE PROBLEM</span></div>
+    <div class="body">
+      <div class="eyebrow">为什么矿物鉴定难</div>
+      <h2>单一模态，都不够。</h2>
+      <div class="amb">
+        <div class="grp">
+          <div class="t">只看照片 → 混淆</div>
+          <div class="items">玛瑙 · 玉髓 · 碧玉</div>
+          <div class="why">都是隐晶质石英，肉眼与图像模型都难分。</div>
+        </div>
+        <div class="grp">
+          <div class="t">只看属性 → 不收敛</div>
+          <div class="items">硬度7 · 白条痕 · 玻璃光泽</div>
+          <div class="why">被几十种矿物共享，定不到唯一种。</div>
+        </div>
+      </div>
+      <p class="lead">几千种矿物，很多长得几乎一样、属性也高度重叠。<strong class="hl">任何单一信号都不足以定种。</strong></p>
+    </div>
+  </section>
+
+  <!-- 03 Idea -->
+  <section class="slide" aria-label="思路">
+    <div class="catalog"><b>Nº 03</b><span>THE IDEA</span></div>
+    <div class="body">
+      <div class="eyebrow">我们的答案</div>
+      <h2>把三种信号<br><strong class="hl">融合</strong>进一次检索。</h2>
+      <p class="lead">每个标本在 Elasticsearch 里同时可被三种方式检索——图像向量、属性全文、结构化字段。
+        ES 9.3 的 <span style="font-family:var(--mono);color:var(--malachite)">rrf</span> retriever 把它们在<strong class="hl">一个查询</strong>里倒数排名融合。这是 Elastic 原生能力，不是我们拼的。</p>
+    </div>
+  </section>
+
+  <!-- 04 Architecture -->
+  <section class="slide" aria-label="架构">
+    <div class="catalog"><b>Nº 04</b><span>ARCHITECTURE · 三层</span></div>
+    <div class="body">
+      <div class="eyebrow">怎么搭的</div>
+      <div class="rows">
+        <div class="lyr"><span class="n">01</span><div><h3>数据层</h3><p>MineralImage5k 近 5,500 张标本照片 · 98 个矿物种 · Mindat 结构化属性（硬度/条痕/晶系/密度）· Wikipedia 描述 → Elasticsearch</p></div></div>
+        <div class="lyr"><span class="n">02</span><div><h3>检索层 · 核心</h3><p>图像 kNN（jina-clip-v2）+ 属性 BM25 + 硬度/晶系结构化过滤 → <strong class="hl">RRF 一次融合</strong></p></div></div>
+        <div class="lyr"><span class="n">03</span><div><h3>Agent 层</h3><p>Agent Builder 的 mineralogist：ES|QL 属性工具 + 融合检索工具，agent 自主编排；支持中文提问</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 05 RRF core -->
+  <section class="slide" aria-label="RRF核心">
+    <div class="catalog"><b>Nº 05</b><span>THE CORE · retriever.rrf</span></div>
+    <div class="body">
+      <div class="eyebrow">融合检索长什么样</div>
+      <div class="fusion">
+        <div class="legs">
+          <div class="leg img"><span class="chip">kNN</span> 图像向量 · jina-clip-v2</div>
+          <div class="leg txt"><span class="chip">BM25</span> 属性全文 · 条痕/颜色/光泽</div>
+          <div class="leg flt"><span class="chip">filter</span> 硬度范围 · 晶系</div>
+        </div>
+        <div class="arrow">→<br>RRF</div>
+        <div class="fuse-out">
+          <div class="k">one query · one ranking</div>
+          <div class="v">候选矿物<br>按种名投票定种</div>
+        </div>
+      </div>
+      <p class="lead">图和文在<strong class="hl2">同一个 1024 维空间</strong>——文字能搜图、图能搜图。三路正交信号，倒数排名融合成一个结果。</p>
+    </div>
+  </section>
+
+  <!-- 06 Agent Builder -->
+  <section class="slide" aria-label="AgentBuilder">
+    <div class="catalog"><b>Nº 06</b><span>AGENT BUILDER</span></div>
+    <div class="body">
+      <div class="eyebrow">Elastic 生态，不只是检索</div>
+      <h2>mineralogist agent<br>自己决定怎么查。</h2>
+      <p class="lead">我给它两个 ES|QL 属性工具和一个融合检索工具，它自主编排：先按硬度筛，还是先按图搜。</p>
+      <div class="amb">
+        <div class="grp"><div class="t">中文提问 →</div><div class="items" style="font-size:1.02rem">"绿色带条带、条痕也绿、硬度约4，是什么矿物？"</div></div>
+        <div class="grp"><div class="t">Agent 作答 →</div><div class="items" style="font-size:1.02rem;color:var(--malachite)">孔雀石 (malachite)</div><div class="why">附匹配证据 + 备选，并说明如何区分。jina-clip 文本塔支持 89 种语言。</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 07 Demo cue -->
+  <section class="slide" aria-label="演示">
+    <div class="catalog"><b>Nº 07</b><span>LIVE DEMO · 拍照识矿</span></div>
+    <div class="body">
+      <div class="eyebrow">让屏幕说话</div>
+      <h2>三栏并排：<br>只看图 · 只看字 · <strong class="hl">RRF 融合</strong>。</h2>
+      <p class="lead">拖入一张标本照片 → 只看图，玛瑙玉髓碧玉混在一起；补上属性和硬度过滤 → 融合这一栏第一名立刻锁定。
+        <strong class="hl">这一栏赢，就是 RRF 的价值。</strong></p>
+      <p class="note">▸ 切到 localhost:8000 演示；再切 Kibana Agent Builder 中文提问一次。</p>
+    </div>
+  </section>
+
+  <!-- 08 Proof -->
+  <section class="slide" aria-label="证明">
+    <div class="catalog"><b>Nº 08</b><span>PROOF · 不自说自话</span></div>
+    <div class="body">
+      <div class="eyebrow">作答准确率 vs 检索强度</div>
+      <h2>检索越强，作答越准。</h2>
+      <div class="chart" id="chart">
+        <div class="bar-row"><span class="lbl">闭卷</span><div class="bar-track"><div class="bar-fill" data-w="22"></div></div><span class="pct">—</span></div>
+        <div class="bar-row"><span class="lbl">BM25 单路</span><div class="bar-track"><div class="bar-fill" data-w="48"></div></div><span class="pct">—</span></div>
+        <div class="bar-row"><span class="lbl">图像单路</span><div class="bar-track"><div class="bar-fill" data-w="44"></div></div><span class="pct">—</span></div>
+        <div class="bar-row"><span class="lbl">RRF 融合</span><div class="bar-track"><div class="bar-fill peak" data-w="82"></div></div><span class="pct">—</span></div>
+      </div>
+      <p class="note">同一套 50 题 · 同一个 judge · 只改检索证据。曲线形状为预期；现场用 ablation.py / accuracy_vs_retrieval.py 的真实数字替换。发布到 trapstreet 公开可复现。</p>
+    </div>
+  </section>
+
+  <!-- 09 Stack -->
+  <section class="slide" aria-label="技术栈">
+    <div class="catalog"><b>Nº 09</b><span>THE STACK</span></div>
+    <div class="body">
+      <div class="eyebrow">用了什么</div>
+      <div class="stackgrid">
+        <div class="c"><div class="k">检索后端</div><div class="v">阿里云 ES 9.3.2</div><div class="d">Enterprise license · RRF / Agent Builder / Workflows 全可用</div></div>
+        <div class="c"><div class="k">嵌入</div><div class="v">jina-clip-v2</div><div class="d">图文同一 1024 维空间 · 本地 MPS 算好写入 dense_vector</div></div>
+        <div class="c"><div class="k">属性数据</div><div class="v">Mindat + Wikipedia</div><div class="d">硬度/条痕/晶系/密度 + 描述文本</div></div>
+        <div class="c"><div class="k">评测</div><div class="v">trapstreet</div><div class="d">公开榜 · 每个数字是真实一次运行</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10 Value -->
+  <section class="slide" aria-label="价值">
+    <div class="catalog"><b>Nº 10</b><span>VALUE</span></div>
+    <div class="body">
+      <div class="eyebrow">这套范式能用在哪</div>
+      <h2>凡是"看到一块石头<br>想知道它是什么"。</h2>
+      <div class="uses">
+        <span>🏔 地质勘探</span><span>💎 宝石鉴定</span><span>📚 地质教育</span><span>🔬 野外科考</span><span>🏛 博物馆藏品</span>
+      </div>
+      <p class="lead">融合检索 + Agent 的范式，对任何"多模态证据、细粒度分类、需要可解释"的领域都可迁移。</p>
+    </div>
+  </section>
+
+  <!-- 11 Closing -->
+  <section class="slide" aria-label="结尾">
+    <div class="catalog"><b>Nº 11</b><span>ONE THING TO REMEMBER</span></div>
+    <div class="body">
+      <div class="eyebrow">如果只记住一句</div>
+      <p class="memory">单一模态搜不准细粒度矿物；Elastic 的 <strong>RRF 融合检索</strong>把图像、属性、硬度过滤合到一个查询里——<strong>作答准确率随融合强度上升，我们用公开可复现的数字证明了。</strong></p>
+      <div class="title-mark"><span class="dot"></span><span class="who">谢谢 · github.com/Zhuaiz/elastic-mineral-hackson</span></div>
+    </div>
+  </section>
+
+</div>
+
+<div class="foot">
+  <div class="mohs" id="mohs"></div>
+  <div class="counter" id="counter">01 / 11</div>
+</div>
+<div class="hint">← → 翻页 · F 全屏</div>
+
+<script>
+  const slides = [...document.querySelectorAll('.slide')];
+  const mohs = document.getElementById('mohs');
+  const counter = document.getElementById('counter');
+  let cur = 0;
+  slides.forEach((_, i) => { const b = document.createElement('i'); mohs.appendChild(b); });
+  const bars = [...mohs.children];
+
+  function show(n) {
+    cur = Math.max(0, Math.min(slides.length - 1, n));
+    slides.forEach((s, i) => s.classList.toggle('active', i === cur));
+    bars.forEach((b, i) => b.classList.toggle('on', i <= cur));
+    counter.textContent = String(cur + 1).padStart(2, '0') + ' / ' + String(slides.length).padStart(2, '0');
+    if (slides[cur].querySelector('#chart')) animateChart();
+  }
+  function animateChart() {
+    slides[cur].querySelectorAll('.bar-fill').forEach(f => {
+      f.style.width = '0'; requestAnimationFrame(() => requestAnimationFrame(() => { f.style.width = f.dataset.w + '%'; }));
+    });
+  }
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { show(cur + 1); e.preventDefault(); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { show(cur - 1); e.preventDefault(); }
+    else if (e.key === 'Home') show(0);
+    else if (e.key === 'End') show(slides.length - 1);
+    else if (e.key.toLowerCase() === 'f') { if (!document.fullscreenElement) document.documentElement.requestFullscreen?.(); else document.exitFullscreen?.(); }
+  });
+  document.getElementById('deck').addEventListener('click', e => { if (!e.target.closest('.toggle')) show(cur + 1); });
+  const btn = document.getElementById('themeBtn');
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    const cur = document.documentElement.getAttribute('data-theme');
+    const next = cur === 'dark' ? 'light' : cur === 'light' ? 'dark' : (matchMedia('(prefers-color-scheme: dark)').matches ? 'light' : 'dark');
+    document.documentElement.setAttribute('data-theme', next);
+  });
+  show(0);
+  document.getElementById('deck').focus();
+</script>

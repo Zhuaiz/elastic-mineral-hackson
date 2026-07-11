@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>矿物鉴定 · Elastic 融合检索</title>
+<style>
+  :root {
+    --bg: oklch(18% 0.02 260); --surface: oklch(24% 0.03 260);
+    --surface-2: oklch(29% 0.035 260); --text: oklch(94% 0.01 260);
+    --muted: oklch(68% 0.02 260); --accent: oklch(72% 0.17 155);
+    --accent-2: oklch(70% 0.15 250); --line: oklch(38% 0.03 260);
+    --win: oklch(78% 0.16 150);
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body { background: var(--bg); color: var(--text); font: 15px/1.5 -apple-system,
+    "PingFang SC", system-ui, sans-serif; padding: 2rem; max-width: 1280px; margin: 0 auto; }
+  h1 { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.01em; }
+  h1 span { color: var(--accent); }
+  .sub { color: var(--muted); margin: .25rem 0 1.5rem; }
+  .controls { display: flex; gap: 1rem; flex-wrap: wrap; align-items: stretch; margin-bottom: 1.5rem; }
+  .drop { flex: 1; min-width: 260px; border: 1.5px dashed var(--line); border-radius: 14px;
+    padding: 1.25rem; background: var(--surface); cursor: pointer; transition: border-color .2s, background .2s;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .5rem; text-align: center; }
+  .drop.hover { border-color: var(--accent); background: var(--surface-2); }
+  .drop img { max-height: 130px; border-radius: 8px; }
+  .drop .hint { color: var(--muted); font-size: .85rem; }
+  .side { flex: 1; min-width: 260px; display: flex; flex-direction: column; gap: .6rem; }
+  textarea, input { background: var(--surface); color: var(--text); border: 1px solid var(--line);
+    border-radius: 10px; padding: .7rem .8rem; font: inherit; width: 100%; }
+  textarea { resize: vertical; min-height: 72px; }
+  .row { display: flex; gap: .6rem; }
+  button { background: var(--accent); color: oklch(20% 0.02 260); border: 0; border-radius: 10px;
+    padding: .7rem 1.4rem; font-weight: 650; cursor: pointer; font-size: .95rem; }
+  button:disabled { opacity: .5; cursor: wait; }
+  .cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+  @media (max-width: 800px) { .cols { grid-template-columns: 1fr; } }
+  .col { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 1rem; }
+  .col.rrf { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+  .col h2 { font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted);
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: .75rem; }
+  .col.rrf h2 { color: var(--accent); }
+  .tag { font-size: .65rem; background: var(--accent); color: oklch(20% 0.02 260);
+    padding: .1rem .5rem; border-radius: 999px; font-weight: 700; }
+  .verdict { font-size: 1.25rem; font-weight: 700; margin-bottom: .1rem; text-transform: capitalize; }
+  .verdict .conf { font-size: .8rem; color: var(--muted); font-weight: 400; }
+  .cand { display: flex; gap: .6rem; align-items: center; padding: .5rem 0; border-top: 1px solid var(--line); }
+  .cand:first-of-type { border-top: 0; }
+  .cand img { width: 46px; height: 46px; object-fit: cover; border-radius: 7px; background: var(--surface-2); }
+  .cand .name { font-weight: 600; text-transform: capitalize; }
+  .cand .meta { color: var(--muted); font-size: .78rem; }
+  .cand .votes { margin-left: auto; font-variant-numeric: tabular-nums; color: var(--accent-2); font-weight: 600; }
+  .cand.top .name { color: var(--win); }
+  .empty { color: var(--muted); font-size: .85rem; padding: 1rem 0; }
+  .foot { color: var(--muted); font-size: .8rem; margin-top: 1.5rem; }
+  .foot code { background: var(--surface); padding: .1rem .4rem; border-radius: 5px; }
+</style>
+</head>
+<body>
+  <h1>矿物鉴定 · <span>Elastic 融合检索</span></h1>
+  <p class="sub">拖入标本照片，或输入野外观察属性。三栏并排：只看图 / 只看字 / <b>RRF 融合</b> —— 谁更准一眼看清。</p>
+
+  <div class="controls">
+    <label class="drop" id="drop">
+      <input type="file" id="file" accept="image/*" hidden>
+      <div id="dropInner">
+        <div style="font-size:2rem">🪨</div>
+        <div>点击或拖入矿石照片</div>
+        <div class="hint">JPG/PNG · 图像 kNN 检索</div>
+      </div>
+    </label>
+    <div class="side">
+      <textarea id="text" placeholder="野外观察（可选）：如 green banded; white streak; hardness 4; vitreous luster"></textarea>
+      <div class="row">
+        <input id="hardness" type="number" step="0.5" placeholder="莫氏硬度（可选，用于结构化过滤）" style="flex:1">
+        <button id="go">鉴定</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="cols" id="cols"></div>
+
+  <p class="foot">检索后端：阿里云 Elasticsearch 9.3.2 · <code>retriever.rrf</code>（BM25 + 图像 kNN + 硬度过滤）·
+    嵌入 jina-clip-v2（图文同一 1024 维空间）· 候选按种名投票，第一名即判定。</p>
+
+<script>
+const $ = id => document.getElementById(id);
+let imageData = null;
+const drop = $('drop'), fileInput = $('file');
+
+drop.addEventListener('click', () => fileInput.click());
+['dragover','dragenter'].forEach(e => drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.add('hover'); }));
+['dragleave','drop'].forEach(e => drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.remove('hover'); }));
+drop.addEventListener('drop', ev => { const f = ev.dataTransfer.files[0]; if (f) loadFile(f); });
+fileInput.addEventListener('change', ev => { const f = ev.target.files[0]; if (f) loadFile(f); });
+
+function loadFile(f) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    imageData = e.target.result;
+    $('dropInner').innerHTML = `<img src="${imageData}" alt="query"><div class="hint">已载入 · 点击更换</div>`;
+  };
+  reader.readAsDataURL(f);
+}
+
+const LABELS = { image: '① 只看图 (图像 kNN)', text: '② 只看字 (BM25)', rrf: '③ RRF 融合' };
+
+$('go').addEventListener('click', async () => {
+  const text = $('text').value.trim();
+  const hardness = parseFloat($('hardness').value) || null;
+  if (!imageData && !text) { alert('请拖入照片或输入属性'); return; }
+  $('go').disabled = true; $('go').textContent = '检索中…';
+  $('cols').innerHTML = '';
+  try {
+    const r = await fetch('/search', { method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ image: imageData, text, hardness }) });
+    const data = await r.json();
+    if (data.error) { $('cols').innerHTML = `<div class="empty">出错：${data.error}</div>`; return; }
+    render(data.results);
+  } catch (e) {
+    $('cols').innerHTML = `<div class="empty">请求失败：${e.message}</div>`;
+  } finally { $('go').disabled = false; $('go').textContent = '鉴定'; }
+});
+
+function render(results) {
+  const order = ['image','text','rrf'].filter(m => results[m]);
+  $('cols').innerHTML = order.map(mode => {
+    const cands = results[mode] || [];
+    const top = cands[0];
+    const isRrf = mode === 'rrf';
+    const cards = cands.length ? cands.map((c,i) => `
+      <div class="cand ${i===0?'top':''}">
+        ${c.thumb ? `<img src="/thumb/${c.thumb.replace('data/images/','')}" onerror="this.style.visibility='hidden'">` : '<div style="width:46px"></div>'}
+        <div>
+          <div class="name">${c.species}</div>
+          <div class="meta">${c.crystal_system||'?'} · H ${c.hardness_min??'?'}-${c.hardness_max??'?'}</div>
+        </div>
+        <div class="votes">${c.votes}</div>
+      </div>`).join('') : '<div class="empty">无结果</div>';
+    return `<div class="col ${isRrf?'rrf':''}">
+      <h2>${LABELS[mode]} ${isRrf?'<span class="tag">融合</span>':''}</h2>
+      ${top ? `<div class="verdict">${top.species} <span class="conf">${top.votes} 票</span></div>` : ''}
+      ${cards}
+    </div>`;
+  }).join('');
+}
+</script>
+</body>
+</html>
