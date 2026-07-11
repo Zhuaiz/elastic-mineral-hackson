@@ -115,6 +115,12 @@
   @keyframes shimmer { to { background-position: -200% 0; } }
   @media (prefers-reduced-motion: reduce) { .skel .bar { animation: none; } }
 
+  .inferNote { display: none; font-family: var(--mono); font-size: .72rem; color: var(--streak);
+    padding: .1rem .2rem; }
+  .inferNote.show { display: block; animation: rise .4s cubic-bezier(.16,1,.3,1) both; }
+  textarea.inferred { border-color: var(--streak); }
+  .cta { color: var(--muted); line-height: 1.8; padding: .6rem 0; font-size: .92rem; }
+  .cta b { color: var(--malachite); }
   .foot { color: var(--faint); font-size: .78rem; margin-top: 1.6rem; font-family: var(--mono);
     letter-spacing: .02em; display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; }
   .foot code { background: var(--panel); padding: .1rem .45rem; border-radius: 6px; color: var(--muted); }
@@ -135,7 +141,8 @@
       </div>
     </label>
     <div class="side">
-      <textarea id="text" placeholder="野外观察（可选）：如 green banded; light green streak; hardness 4"></textarea>
+      <textarea id="text" placeholder="野外观察（可选）：如 green banded; light green streak; hardness 4 —— 留空时将由图像近邻自动推断"></textarea>
+      <div class="inferNote" id="inferNote"></div>
       <div class="row">
         <input id="hardness" type="number" step="0.5" placeholder="莫氏硬度（可选 · RRF 栏结构化过滤）" style="flex:1">
         <button class="go" id="go">鉴定</button>
@@ -208,6 +215,7 @@ fetch('/samples').then(r => r.json()).then(samples => {
 });
 
 const LABELS = { image: '① 只看图 · 图像 kNN', text: '② 只看字 · BM25', rrf: '③ RRF 融合' };
+let inferredUsed = false;
 const SKELETON = ['image','text','rrf'].map(m =>
   `<div class="col ${m} skel"><h2>${LABELS[m]}</h2><div class="bar"></div><div class="bar"></div><div class="bar"></div></div>`).join('');
 
@@ -225,6 +233,17 @@ async function run() {
       body: JSON.stringify({ image: imageData, text, hardness }) });
     const data = await r.json();
     if (data.error) { $('cols').innerHTML = `<div class="empty">出错：${data.error}</div>`; return; }
+    inferredUsed = !!data.inferred;
+    if (data.inferred) {
+      // jina-clip 只产向量不产文字；这段"野外观察"是图像近邻属性的聚合推断
+      $('text').value = data.inferred.text;
+      $('text').classList.add('inferred');
+      $('inferNote').textContent = `↑ 由 ${data.inferred.neighbors} 个图像近邻推断（jina-clip 只产向量）· 可修改后再鉴定`;
+      $('inferNote').classList.add('show');
+    } else if (!inferredUsed) {
+      $('text').classList.remove('inferred');
+      $('inferNote').classList.remove('show');
+    }
     render(data.results, (performance.now() - t0) / 1000);
   } catch (e) {
     $('cols').innerHTML = `<div class="empty">请求失败：${e.message}</div>`;
@@ -239,6 +258,13 @@ function render(results, secs) {
     $('bannerLat').textContent = `${secs.toFixed(1)}s · 5,498 向量 · 一次 rrf 查询`;
     $('banner').classList.add('show');
   }
+  const ctaCol = !results.rrf && inferredUsed ? `
+    <div class="col rrf">
+      <h2>③ RRF 融合 <span class="tag">FUSION</span></h2>
+      <div class="cta">近邻推断的观察已填入上方（黄框）。<br>
+        像地质学家一样<b>确认或修正</b>它（比如把条痕改成实测颜色），
+        再填一格<b>实测硬度</b>——点「鉴定」，<b>融合检索上场</b>。</div>
+    </div>` : '';
   $('cols').innerHTML = order.map(mode => {
     const cands = results[mode] || [];
     const top = cands[0];
@@ -256,12 +282,13 @@ function render(results, secs) {
         </div>
         <div class="score">${score}${isWinner && i > 0 ? `<br>#${i + 1}` : ''}</div>
       </div>`; }).join('') : '<div class="empty">无结果</div>';
+    const lbl = mode === 'text' && inferredUsed ? LABELS.text + ' · 近邻推断' : LABELS[mode];
     return `<div class="col ${mode}">
-      <h2>${LABELS[mode]} ${isRrf ? '<span class="tag">FUSION</span>' : ''}</h2>
+      <h2>${lbl} ${isRrf ? '<span class="tag">FUSION</span>' : ''}</h2>
       ${top ? `<div class="verdict"><span class="mark ${hit ? 'hit' : 'miss'}">${hit ? '●' : '○'}</span>${top.species}</div>` : ''}
       ${cards}
     </div>`;
-  }).join('');
+  }).join('') + ctaCol;
 }
 </script>
 </body>

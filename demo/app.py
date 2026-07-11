@@ -12,7 +12,10 @@
 import base64
 import io
 import json
+import re
+import statistics
 import sys
+from collections import Counter
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -44,7 +47,54 @@ def knn_leg(vector: list[float]) -> dict:
                     "k": 60, "num_candidates": 400}}
 
 
-def run_search(mode: str, vector, clue, hardness) -> list[dict]:
+def _mode_phrase(hits: list, field: str, first_words: int = 2,
+                 min_share: float = 0.5) -> str:
+    """近邻里该字段的众数短语；共识不足（众数占比 < min_share）则闭嘴不猜。"""
+    c: Counter = Counter()
+    for h in hits:
+        v = re.split(r"[,.;/(]", (h["_source"].get(field) or "").lower())[0]
+        v = " ".join(v.split()[:first_words]).strip()
+        if v:
+            c[v] += 1
+    if not c:
+        return ""
+    phrase, votes = c.most_common(1)[0]
+    return phrase if votes / sum(c.values()) >= min_share else ""
+
+
+def infer_observations(vector: list[float]) -> dict | None:
+    """伪相关反馈：jina-clip 只产向量不产文字，所以用图像近邻的属性
+    聚合出一段"推断的野外观察"——既给页面一个可读可改的描述，
+    又让纯图查询长出 BM25 文字腿，让 RRF 真正有两路可融。
+    近邻可能带偏（回声室），页面上明确标注来源、鼓励人工修正。"""
+    body = {"size": 15, "_source": ["species", "crystal_system", "streak",
+                                    "luster", "color", "hardness_min",
+                                    "hardness_max"], **knn_leg(vector)}
+    hits = es().search(index=INDEX_IMAGES, **body)["hits"]["hits"]
+    if not hits:
+        return None
+    parts = []
+    if cs := _mode_phrase(hits, "crystal_system", 1):
+        parts.append(f"crystal system {cs}")
+    hard = [float(h["_source"]["hardness_min"]) for h in hits
+            if h["_source"].get("hardness_min") not in (None, "")]
+    if hard:
+        parts.append(f"Mohs hardness about {statistics.median(hard):.1f}")
+    if streak := _mode_phrase(hits, "streak", 2):
+        parts.append(f"{streak} streak")
+    if color := _mode_phrase(hits, "color", 2):
+        parts.append(f"color {color}")
+    if luster := _mode_phrase(hits, "luster", 1):
+        parts.append(f"{luster} luster")
+    if not parts:
+        return None
+    species_pool = Counter(h["_source"]["species"] for h in hits)
+    return {"text": "; ".join(parts),
+            "neighbors": len(hits),
+            "top_species": [s for s, _ in species_pool.most_common(3)]}
+
+
+def run_search(mode: str, vector, clue, hardness, bm25_weight: float = 1.0) -> list[dict]:
     src = ["species", "props_text", "thumb", "crystal_system",
            "hardness_min", "hardness_max"]
     if mode == "image":
@@ -52,12 +102,12 @@ def run_search(mode: str, vector, clue, hardness) -> list[dict]:
     elif mode == "text":
         body = {"size": CONTEXT_K, "_source": src,
                 "query": bm25_leg(clue)["standard"]["query"]}
-    else:  # rrf
+    else:  # rrf（加权：推断文字只做温和先验，图像腿主导，避免 PRF 回声室压过真信号）
         legs = []
         if clue:
-            legs.append(bm25_leg(clue))
+            legs.append({"retriever": bm25_leg(clue), "weight": bm25_weight})
         if vector is not None:
-            legs.append(knn_leg(vector))
+            legs.append({"retriever": knn_leg(vector), "weight": 1.0})
         rrf = {"retrievers": legs, "rank_window_size": 200, "rank_constant": 20}
         if hardness:
             rrf["filter"] = [{"range": {"hardness_min": {"lte": hardness}}},
@@ -231,14 +281,26 @@ class Handler(BaseHTTPRequestHandler):
         hardness = req.get("hardness")
         try:
             vector = embed(req.get("image"), text)
+            inferred = None
+            clue = text
+            if req.get("image") and not text and vector is not None:
+                # 纯图查询：近邻属性推断出文字腿（页面展示 + BM25 输入）
+                inferred = infer_observations(vector)
+                clue = inferred["text"] if inferred else None
+            # 推断文字不进融合（实测会经票数聚合放大语料高频种，反而拖垮融合）；
+            # 它只作为"待人工确认的观察"展示 + 文本栏预览。确认/修正后成为用户文字，融合才上场。
+            run_rrf = bool(text) or hardness is not None
             out = {}
             for mode in ("image", "text", "rrf"):
                 if mode == "image" and vector is None:
                     continue
-                if mode == "text" and not text:
+                if mode == "text" and not clue:
                     continue
-                out[mode] = run_search(mode, vector, text, hardness)
-            self._send(200, json.dumps({"results": out}))
+                if mode == "rrf" and inferred and not run_rrf:
+                    continue
+                out[mode] = run_search(mode, vector, text if mode == "rrf" else clue,
+                                       hardness)
+            self._send(200, json.dumps({"results": out, "inferred": inferred}))
         except Exception as e:
             self._send(500, json.dumps({"error": f"{type(e).__name__}: {e}"}))
 
