@@ -80,7 +80,11 @@ def main() -> None:
           f"{es.license.get()['license']['type']}")
 
     for index, mapping in [(INDEX_IMAGES, IMAGES_MAPPING), (INDEX_SPECIES, SPECIES_MAPPING)]:
-        if es.indices.exists(index=index):
+        if es.indices.exists_alias(name=index):
+            # rebuild_images_index.py 切换后该名字是别名，删掉背后的真实索引
+            for concrete in es.indices.get_alias(name=index):
+                es.indices.delete(index=concrete)
+        elif es.indices.exists(index=index):
             es.indices.delete(index=index)
         es.indices.create(index=index, mappings=mapping)
         print(f"created {index}")

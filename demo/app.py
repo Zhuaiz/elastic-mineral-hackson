@@ -23,7 +23,7 @@ from config import INDEX_IMAGES  # noqa: E402
 from index_es import es_client  # noqa: E402
 
 PORT = 8000
-CONTEXT_K = 60  # 检索窗口要装得下热门种的重复文本（每种最多 ~30 张图共享同一段 props_text）
+CONTEXT_K = 120  # 检索窗口要装得下热门种的重复文本（语料 5,498 后每种最多 ~56 张图共享同一段 props_text）
 _es = None
 
 
@@ -41,7 +41,7 @@ def bm25_leg(clue: str) -> dict:
 
 def knn_leg(vector: list[float]) -> dict:
     return {"knn": {"field": "image_vector", "query_vector": vector,
-                    "k": 30, "num_candidates": 200}}
+                    "k": 60, "num_candidates": 400}}
 
 
 def run_search(mode: str, vector, clue, hardness) -> list[dict]:
@@ -58,7 +58,7 @@ def run_search(mode: str, vector, clue, hardness) -> list[dict]:
             legs.append(bm25_leg(clue))
         if vector is not None:
             legs.append(knn_leg(vector))
-        rrf = {"retrievers": legs, "rank_window_size": 100, "rank_constant": 20}
+        rrf = {"retrievers": legs, "rank_window_size": 200, "rank_constant": 20}
         if hardness:
             rrf["filter"] = [{"range": {"hardness_min": {"lte": hardness}}},
                              {"range": {"hardness_max": {"gte": hardness}}}]

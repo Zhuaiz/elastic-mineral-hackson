@@ -26,19 +26,21 @@ BATCH = 8
 
 def iter_rows(per_class: int | None):
     counts: dict[str, int] = {}
+    seq: dict[str, int] = {}  # 每个 split 全局连号：分片内行号会跨分片重复导致 _id 冲突互相覆盖
     for pf in sorted(PARQUET_DIR.glob("*.parquet")):
         split = pf.name.split("-")[0]
         table = pq.read_table(pf)
         for i in range(table.num_rows):
             label_id = table["name"][i].as_py()
             raw = CLASS_NAMES[label_id]
+            n = seq[split] = seq.get(split, -1) + 1
             if per_class is not None:
                 if counts.get(raw, 0) >= per_class:
                     continue
                 counts[raw] = counts.get(raw, 0) + 1
             img_bytes = table["image"][i]["bytes"].as_py()
             yield {"split": split, "class_raw": raw, "bytes": img_bytes,
-                   "row": f"{split}-{i:05d}"}
+                   "row": f"{split}-{n:05d}"}
 
 
 def main() -> None:
