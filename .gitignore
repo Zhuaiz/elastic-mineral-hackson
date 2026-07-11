@@ -12,3 +12,4 @@ trap/solutions/_work/
 trap/solutions/answers/
 trap/solutions/contexts_all.json
 trap/solutions/report_*.json
+trap/solutions/wire_*.json

@@ -13,7 +13,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent.parent
 TASK = ROOT / "trap" / "task"
 SOL = Path(__file__).resolve().parent
-TASK_ID = "mineral-id"
+TASK_ID = "mineral-species-id"
 REPO = "https://github.com/Zhuaiz/elastic-mineral-hackson"
 
 
@@ -53,19 +53,35 @@ def main() -> None:
     acc = n_pass / len(cases)
     print(f"[{config}] {n_pass}/{len(cases)} = {acc:.1%}")
 
+    # prod 的 wire 格式（比 tp 0.4.0 新）：cases_results + provenance，POST /api/submit。
+    # tp CLI 仍用旧的 /api/submit/{task} 路径（prod 上 404），故直接构造并 POST。
+    commit = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT,
+                            capture_output=True, text=True).stdout.strip()
     now = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
     report = {
-        "task_id": TASK_ID, "cases": cases, "started_at": now, "finished_at": now,
-        "metadata": {"engine": engine, "repo": REPO, "framework": "elastic-agenthack",
+        "task_id": TASK_ID, "cases_results": cases,
+        "started_at": now, "finished_at": now,
+        "provenance": {"task": {"repo": REPO, "commit": commit},
+                       "solution": {"repo": REPO, "commit": commit}},
+        "metadata": {"engine": engine, "framework": "elastic-agenthack",
                      "strategy": strategy, "model": "qwen-plus"},
     }
-    report_path = SOL / f"report_{config}.json"
+    report_path = SOL / f"wire_{config}.json"
     json.dump(report, open(report_path, "w"), indent=2)
 
-    print(f"submitting {report_path.name} ...")
-    r = subprocess.run(["tp", "submit", TASK_ID, "--report", str(report_path)],
-                       capture_output=True, text=True)
-    print(r.stdout or r.stderr)
+    import os
+    import urllib.request
+    key = os.environ.get("TP_API_KEY") or json.load(
+        open(os.path.expanduser("~/.config/trapstreet/auth.json")))["api_key"]
+    print(f"submitting {report_path.name} to prod /api/submit ...")
+    req = urllib.request.Request(
+        "https://trapstreet.run/api/submit", data=report_path.read_bytes(),
+        headers={"authorization": f"Bearer {key}", "content-type": "application/json"},
+        method="POST")
+    with urllib.request.urlopen(req, timeout=60) as resp:
+        run = json.loads(resp.read()).get("run", {})
+    print(f"  ok -> score {run.get('score')} ({run.get('cases_passed')}/{run.get('cases_total')})")
+    print(f"  https://trapstreet.run/tasks/{TASK_ID}")
 
 
 if __name__ == "__main__":
