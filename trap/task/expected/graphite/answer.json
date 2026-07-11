@@ -1,0 +1,19 @@
+{
+ "id": "graphite",
+ "answer": "graphite",
+ "type": "mineral_species",
+ "accepted": [],
+ "matchers": [
+  {
+   "kind": "keywords_any_word",
+   "values": [
+    "graphite"
+   ]
+  },
+  {
+   "kind": "no_hedge"
+  }
+ ],
+ "category": "hexagonal",
+ "difficulty": "easy"
+}

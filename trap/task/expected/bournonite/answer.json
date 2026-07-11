@@ -1,0 +1,19 @@
+{
+ "id": "bournonite",
+ "answer": "bournonite",
+ "type": "mineral_species",
+ "accepted": [],
+ "matchers": [
+  {
+   "kind": "keywords_any_word",
+   "values": [
+    "bournonite"
+   ]
+  },
+  {
+   "kind": "no_hedge"
+  }
+ ],
+ "category": "orthorhombic",
+ "difficulty": "easy"
+}

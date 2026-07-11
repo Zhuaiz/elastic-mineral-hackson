@@ -1,0 +1,22 @@
+{
+ "id": "cancrinite",
+ "answer": "cancrinite",
+ "type": "mineral_species",
+ "accepted": [
+  "cancrinit"
+ ],
+ "matchers": [
+  {
+   "kind": "keywords_any_word",
+   "values": [
+    "cancrinite",
+    "cancrinit"
+   ]
+  },
+  {
+   "kind": "no_hedge"
+  }
+ ],
+ "category": "hexagonal",
+ "difficulty": "hard"
+}

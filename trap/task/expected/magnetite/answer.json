@@ -1,0 +1,19 @@
+{
+ "id": "magnetite",
+ "answer": "magnetite",
+ "type": "mineral_species",
+ "accepted": [],
+ "matchers": [
+  {
+   "kind": "keywords_any_word",
+   "values": [
+    "magnetite"
+   ]
+  },
+  {
+   "kind": "no_hedge"
+  }
+ ],
+ "category": "isometric",
+ "difficulty": "easy"
+}

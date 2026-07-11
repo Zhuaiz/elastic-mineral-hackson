@@ -1,0 +1,19 @@
+{
+ "id": "hematite",
+ "answer": "hematite",
+ "type": "mineral_species",
+ "accepted": [],
+ "matchers": [
+  {
+   "kind": "keywords_any_word",
+   "values": [
+    "hematite"
+   ]
+  },
+  {
+   "kind": "no_hedge"
+  }
+ ],
+ "category": "trigonal",
+ "difficulty": "easy"
+}

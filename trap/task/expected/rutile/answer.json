@@ -1,0 +1,19 @@
+{
+ "id": "rutile",
+ "answer": "rutile",
+ "type": "mineral_species",
+ "accepted": [],
+ "matchers": [
+  {
+   "kind": "keywords_any_word",
+   "values": [
+    "rutile"
+   ]
+  },
+  {
+   "kind": "no_hedge"
+  }
+ ],
+ "category": "tetragonal",
+ "difficulty": "easy"
+}

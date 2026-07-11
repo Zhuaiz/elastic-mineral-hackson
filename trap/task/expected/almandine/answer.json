@@ -1,0 +1,19 @@
+{
+ "id": "almandine",
+ "answer": "almandine",
+ "type": "mineral_species",
+ "accepted": [],
+ "matchers": [
+  {
+   "kind": "keywords_any_word",
+   "values": [
+    "almandine"
+   ]
+  },
+  {
+   "kind": "no_hedge"
+  }
+ ],
+ "category": "isometric",
+ "difficulty": "hard"
+}

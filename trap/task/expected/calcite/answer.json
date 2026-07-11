@@ -1,0 +1,19 @@
+{
+ "id": "calcite",
+ "answer": "calcite",
+ "type": "mineral_species",
+ "accepted": [],
+ "matchers": [
+  {
+   "kind": "keywords_any_word",
+   "values": [
+    "calcite"
+   ]
+  },
+  {
+   "kind": "no_hedge"
+  }
+ ],
+ "category": "trigonal",
+ "difficulty": "hard"
+}

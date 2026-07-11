@@ -1,0 +1,19 @@
+{
+ "id": "chalcopyrite",
+ "answer": "chalcopyrite",
+ "type": "mineral_species",
+ "accepted": [],
+ "matchers": [
+  {
+   "kind": "keywords_any_word",
+   "values": [
+    "chalcopyrite"
+   ]
+  },
+  {
+   "kind": "no_hedge"
+  }
+ ],
+ "category": "tetragonal",
+ "difficulty": "easy"
+}

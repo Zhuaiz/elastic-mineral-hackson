@@ -1,0 +1,19 @@
+{
+ "id": "beryl",
+ "answer": "beryl",
+ "type": "mineral_species",
+ "accepted": [],
+ "matchers": [
+  {
+   "kind": "keywords_any_word",
+   "values": [
+    "beryl"
+   ]
+  },
+  {
+   "kind": "no_hedge"
+  }
+ ],
+ "category": "hexagonal",
+ "difficulty": "hard"
+}

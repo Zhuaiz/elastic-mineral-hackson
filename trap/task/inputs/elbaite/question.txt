@@ -1,0 +1,8 @@
+A field geologist recorded these hand-specimen observations of an unknown mineral:
+
+crystal system trigonal; Mohs hardness 7.5; white streak; color green; vitreous to oily luster; transparent; specific gravity about 2.9.
+
+Identify the mineral species. Choose from:
+actinolite, aegirine, agate, albite, almandine, amazonite, amber, amethyst, analcime, andalusite, andradite, apatite, aragonite, arsenic, arsenopyrite, augite, azurite, barite, beryl, bismuth, bournonite, calcite, cancrinite, carnelian, cassiterite, celestine, chalcedony, chalcopyrite, chromite, chrysoberyl, chrysoprase, cinnabar, cobaltite, copper, corundum, creedite, cuprite, diopside, dolomite, elbaite, epidote, eudialyte, flint, fluorapatite, fluorite, galena, goethite, gold, graphite, grossular, gypsum, hedenbergite, hematite, hornblende, ilmenite, jasper, kyanite, labradorite, lapis lazuli, limonite, magnetite, malachite, marcasite, microcline, molybdenite, muscovite, natrolite, nephrite, oligoclase, opal, orthoclase, pectolite, pollucite, prehnite, proustite, pyrargyrite, pyrite, pyrrhotite, quartz, rhodonite, rutile, scheelite, siderite, silver, sphalerite, spinel, spodumene, stibnite, sulfur, tetrahedrite, titanite, topaz, tourmaline, tremolite, vesuvianite, vivianite, wollastonite, zircon
+
+Answer with the exact species name from the list only, one lowercase word. Do not hedge or explain.

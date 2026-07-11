@@ -1,0 +1,22 @@
+{
+ "id": "titanite",
+ "answer": "titanite",
+ "type": "mineral_species",
+ "accepted": [
+  "sphene"
+ ],
+ "matchers": [
+  {
+   "kind": "keywords_any_word",
+   "values": [
+    "titanite",
+    "sphene"
+   ]
+  },
+  {
+   "kind": "no_hedge"
+  }
+ ],
+ "category": "monoclinic",
+ "difficulty": "medium"
+}

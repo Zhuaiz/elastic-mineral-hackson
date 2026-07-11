@@ -1,0 +1,19 @@
+{
+ "id": "ilmenite",
+ "answer": "ilmenite",
+ "type": "mineral_species",
+ "accepted": [],
+ "matchers": [
+  {
+   "kind": "keywords_any_word",
+   "values": [
+    "ilmenite"
+   ]
+  },
+  {
+   "kind": "no_hedge"
+  }
+ ],
+ "category": "trigonal",
+ "difficulty": "easy"
+}

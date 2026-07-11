@@ -1,0 +1,22 @@
+{
+ "id": "cobaltite",
+ "answer": "cobaltite",
+ "type": "mineral_species",
+ "accepted": [
+  "cobaltin"
+ ],
+ "matchers": [
+  {
+   "kind": "keywords_any_word",
+   "values": [
+    "cobaltite",
+    "cobaltin"
+   ]
+  },
+  {
+   "kind": "no_hedge"
+  }
+ ],
+ "category": "orthorhombic",
+ "difficulty": "easy"
+}

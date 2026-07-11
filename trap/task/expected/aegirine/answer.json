@@ -1,0 +1,19 @@
+{
+ "id": "aegirine",
+ "answer": "aegirine",
+ "type": "mineral_species",
+ "accepted": [],
+ "matchers": [
+  {
+   "kind": "keywords_any_word",
+   "values": [
+    "aegirine"
+   ]
+  },
+  {
+   "kind": "no_hedge"
+  }
+ ],
+ "category": "monoclinic",
+ "difficulty": "easy"
+}

@@ -1,0 +1,19 @@
+{
+ "id": "pollucite",
+ "answer": "pollucite",
+ "type": "mineral_species",
+ "accepted": [],
+ "matchers": [
+  {
+   "kind": "keywords_any_word",
+   "values": [
+    "pollucite"
+   ]
+  },
+  {
+   "kind": "no_hedge"
+  }
+ ],
+ "category": "isometric",
+ "difficulty": "hard"
+}

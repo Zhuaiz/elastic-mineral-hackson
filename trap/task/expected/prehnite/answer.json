@@ -1,0 +1,19 @@
+{
+ "id": "prehnite",
+ "answer": "prehnite",
+ "type": "mineral_species",
+ "accepted": [],
+ "matchers": [
+  {
+   "kind": "keywords_any_word",
+   "values": [
+    "prehnite"
+   ]
+  },
+  {
+   "kind": "no_hedge"
+  }
+ ],
+ "category": "orthorhombic",
+ "difficulty": "hard"
+}

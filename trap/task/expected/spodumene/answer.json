@@ -1,0 +1,19 @@
+{
+ "id": "spodumene",
+ "answer": "spodumene",
+ "type": "mineral_species",
+ "accepted": [],
+ "matchers": [
+  {
+   "kind": "keywords_any_word",
+   "values": [
+    "spodumene"
+   ]
+  },
+  {
+   "kind": "no_hedge"
+  }
+ ],
+ "category": "monoclinic",
+ "difficulty": "hard"
+}

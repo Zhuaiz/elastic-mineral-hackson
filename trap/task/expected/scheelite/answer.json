@@ -1,0 +1,22 @@
+{
+ "id": "scheelite",
+ "answer": "scheelite",
+ "type": "mineral_species",
+ "accepted": [
+  "scheelit"
+ ],
+ "matchers": [
+  {
+   "kind": "keywords_any_word",
+   "values": [
+    "scheelite",
+    "scheelit"
+   ]
+  },
+  {
+   "kind": "no_hedge"
+  }
+ ],
+ "category": "tetragonal",
+ "difficulty": "hard"
+}

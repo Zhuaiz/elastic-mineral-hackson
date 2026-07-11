@@ -1,0 +1,19 @@
+{
+ "id": "natrolite",
+ "answer": "natrolite",
+ "type": "mineral_species",
+ "accepted": [],
+ "matchers": [
+  {
+   "kind": "keywords_any_word",
+   "values": [
+    "natrolite"
+   ]
+  },
+  {
+   "kind": "no_hedge"
+  }
+ ],
+ "category": "orthorhombic",
+ "difficulty": "hard"
+}

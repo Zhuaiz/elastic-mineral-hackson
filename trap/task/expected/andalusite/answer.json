@@ -1,0 +1,19 @@
+{
+ "id": "andalusite",
+ "answer": "andalusite",
+ "type": "mineral_species",
+ "accepted": [],
+ "matchers": [
+  {
+   "kind": "keywords_any_word",
+   "values": [
+    "andalusite"
+   ]
+  },
+  {
+   "kind": "no_hedge"
+  }
+ ],
+ "category": "orthorhombic",
+ "difficulty": "hard"
+}

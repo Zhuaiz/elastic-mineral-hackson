@@ -1,0 +1,19 @@
+{
+ "id": "pyrrhotite",
+ "answer": "pyrrhotite",
+ "type": "mineral_species",
+ "accepted": [],
+ "matchers": [
+  {
+   "kind": "keywords_any_word",
+   "values": [
+    "pyrrhotite"
+   ]
+  },
+  {
+   "kind": "no_hedge"
+  }
+ ],
+ "category": "monoclinic",
+ "difficulty": "easy"
+}

@@ -1,0 +1,22 @@
+{
+ "id": "elbaite",
+ "answer": "elbaite",
+ "type": "mineral_species",
+ "accepted": [
+  "elbait"
+ ],
+ "matchers": [
+  {
+   "kind": "keywords_any_word",
+   "values": [
+    "elbaite",
+    "elbait"
+   ]
+  },
+  {
+   "kind": "no_hedge"
+  }
+ ],
+ "category": "trigonal",
+ "difficulty": "hard"
+}

@@ -1,0 +1,19 @@
+{
+ "id": "grossular",
+ "answer": "grossular",
+ "type": "mineral_species",
+ "accepted": [],
+ "matchers": [
+  {
+   "kind": "keywords_any_word",
+   "values": [
+    "grossular"
+   ]
+  },
+  {
+   "kind": "no_hedge"
+  }
+ ],
+ "category": "isometric",
+ "difficulty": "hard"
+}

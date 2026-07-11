@@ -1,0 +1,19 @@
+{
+ "id": "pyrite",
+ "answer": "pyrite",
+ "type": "mineral_species",
+ "accepted": [],
+ "matchers": [
+  {
+   "kind": "keywords_any_word",
+   "values": [
+    "pyrite"
+   ]
+  },
+  {
+   "kind": "no_hedge"
+  }
+ ],
+ "category": "isometric",
+ "difficulty": "easy"
+}

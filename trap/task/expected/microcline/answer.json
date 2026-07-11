@@ -1,0 +1,19 @@
+{
+ "id": "microcline",
+ "answer": "microcline",
+ "type": "mineral_species",
+ "accepted": [],
+ "matchers": [
+  {
+   "kind": "keywords_any_word",
+   "values": [
+    "microcline"
+   ]
+  },
+  {
+   "kind": "no_hedge"
+  }
+ ],
+ "category": "triclinic",
+ "difficulty": "hard"
+}

@@ -1,0 +1,19 @@
+{
+ "id": "kyanite",
+ "answer": "kyanite",
+ "type": "mineral_species",
+ "accepted": [],
+ "matchers": [
+  {
+   "kind": "keywords_any_word",
+   "values": [
+    "kyanite"
+   ]
+  },
+  {
+   "kind": "no_hedge"
+  }
+ ],
+ "category": "triclinic",
+ "difficulty": "easy"
+}

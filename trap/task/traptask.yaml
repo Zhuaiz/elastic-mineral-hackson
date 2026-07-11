@@ -1,0 +1,259 @@
+dirs:
+  inputs: inputs/
+  expected: expected/
+
+cases:
+- id: cancrinite
+  description: "Identify the mineral from hand-specimen properties (cancrinite)."
+  tags:
+  - hexagonal
+  - hard
+- id: almandine
+  description: "Identify the mineral from hand-specimen properties (almandine)."
+  tags:
+  - isometric
+  - hard
+- id: grossular
+  description: "Identify the mineral from hand-specimen properties (grossular)."
+  tags:
+  - isometric
+  - hard
+- id: fluorite
+  description: "Identify the mineral from hand-specimen properties (fluorite)."
+  tags:
+  - isometric
+  - hard
+- id: epidote
+  description: "Identify the mineral from hand-specimen properties (epidote)."
+  tags:
+  - monoclinic
+  - medium
+- id: chalcopyrite
+  description: "Identify the mineral from hand-specimen properties (chalcopyrite)."
+  tags:
+  - tetragonal
+  - easy
+- id: calcite
+  description: "Identify the mineral from hand-specimen properties (calcite)."
+  tags:
+  - trigonal
+  - hard
+- id: beryl
+  description: "Identify the mineral from hand-specimen properties (beryl)."
+  tags:
+  - hexagonal
+  - hard
+- id: pyrite
+  description: "Identify the mineral from hand-specimen properties (pyrite)."
+  tags:
+  - isometric
+  - easy
+- id: albite
+  description: "Identify the mineral from hand-specimen properties (albite)."
+  tags:
+  - triclinic
+  - hard
+- id: aegirine
+  description: "Identify the mineral from hand-specimen properties (aegirine)."
+  tags:
+  - monoclinic
+  - easy
+- id: andalusite
+  description: "Identify the mineral from hand-specimen properties (andalusite)."
+  tags:
+  - orthorhombic
+  - hard
+- id: titanite
+  description: "Identify the mineral from hand-specimen properties (titanite)."
+  tags:
+  - monoclinic
+  - medium
+- id: zircon
+  description: "Identify the mineral from hand-specimen properties (zircon)."
+  tags:
+  - tetragonal
+  - medium
+- id: galena
+  description: "Identify the mineral from hand-specimen properties (galena)."
+  tags:
+  - isometric
+  - easy
+- id: hematite
+  description: "Identify the mineral from hand-specimen properties (hematite)."
+  tags:
+  - trigonal
+  - easy
+- id: sphalerite
+  description: "Identify the mineral from hand-specimen properties (sphalerite)."
+  tags:
+  - isometric
+  - easy
+- id: vivianite
+  description: "Identify the mineral from hand-specimen properties (vivianite)."
+  tags:
+  - monoclinic
+  - hard
+- id: bournonite
+  description: "Identify the mineral from hand-specimen properties (bournonite)."
+  tags:
+  - orthorhombic
+  - easy
+- id: molybdenite
+  description: "Identify the mineral from hand-specimen properties (molybdenite)."
+  tags:
+  - hexagonal
+  - easy
+- id: magnetite
+  description: "Identify the mineral from hand-specimen properties (magnetite)."
+  tags:
+  - isometric
+  - easy
+- id: microcline
+  description: "Identify the mineral from hand-specimen properties (microcline)."
+  tags:
+  - triclinic
+  - hard
+- id: graphite
+  description: "Identify the mineral from hand-specimen properties (graphite)."
+  tags:
+  - hexagonal
+  - easy
+- id: dolomite
+  description: "Identify the mineral from hand-specimen properties (dolomite)."
+  tags:
+  - trigonal
+  - hard
+- id: rutile
+  description: "Identify the mineral from hand-specimen properties (rutile)."
+  tags:
+  - tetragonal
+  - easy
+- id: tremolite
+  description: "Identify the mineral from hand-specimen properties (tremolite)."
+  tags:
+  - monoclinic
+  - hard
+- id: hedenbergite
+  description: "Identify the mineral from hand-specimen properties (hedenbergite)."
+  tags:
+  - monoclinic
+  - hard
+- id: topaz
+  description: "Identify the mineral from hand-specimen properties (topaz)."
+  tags:
+  - orthorhombic
+  - hard
+- id: actinolite
+  description: "Identify the mineral from hand-specimen properties (actinolite)."
+  tags:
+  - monoclinic
+  - hard
+- id: azurite
+  description: "Identify the mineral from hand-specimen properties (azurite)."
+  tags:
+  - monoclinic
+  - easy
+- id: elbaite
+  description: "Identify the mineral from hand-specimen properties (elbaite)."
+  tags:
+  - trigonal
+  - hard
+- id: cobaltite
+  description: "Identify the mineral from hand-specimen properties (cobaltite)."
+  tags:
+  - orthorhombic
+  - easy
+- id: pollucite
+  description: "Identify the mineral from hand-specimen properties (pollucite)."
+  tags:
+  - isometric
+  - hard
+- id: augite
+  description: "Identify the mineral from hand-specimen properties (augite)."
+  tags:
+  - monoclinic
+  - easy
+- id: scheelite
+  description: "Identify the mineral from hand-specimen properties (scheelite)."
+  tags:
+  - tetragonal
+  - hard
+- id: kyanite
+  description: "Identify the mineral from hand-specimen properties (kyanite)."
+  tags:
+  - triclinic
+  - easy
+- id: andradite
+  description: "Identify the mineral from hand-specimen properties (andradite)."
+  tags:
+  - isometric
+  - hard
+- id: siderite
+  description: "Identify the mineral from hand-specimen properties (siderite)."
+  tags:
+  - trigonal
+  - hard
+- id: cuprite
+  description: "Identify the mineral from hand-specimen properties (cuprite)."
+  tags:
+  - isometric
+  - easy
+- id: spodumene
+  description: "Identify the mineral from hand-specimen properties (spodumene)."
+  tags:
+  - monoclinic
+  - hard
+- id: corundum
+  description: "Identify the mineral from hand-specimen properties (corundum)."
+  tags:
+  - trigonal
+  - hard
+- id: prehnite
+  description: "Identify the mineral from hand-specimen properties (prehnite)."
+  tags:
+  - orthorhombic
+  - hard
+- id: stibnite
+  description: "Identify the mineral from hand-specimen properties (stibnite)."
+  tags:
+  - orthorhombic
+  - easy
+- id: chrysoberyl
+  description: "Identify the mineral from hand-specimen properties (chrysoberyl)."
+  tags:
+  - orthorhombic
+  - hard
+- id: arsenopyrite
+  description: "Identify the mineral from hand-specimen properties (arsenopyrite)."
+  tags:
+  - monoclinic
+  - easy
+- id: diopside
+  description: "Identify the mineral from hand-specimen properties (diopside)."
+  tags:
+  - monoclinic
+  - hard
+- id: pyrrhotite
+  description: "Identify the mineral from hand-specimen properties (pyrrhotite)."
+  tags:
+  - monoclinic
+  - easy
+- id: creedite
+  description: "Identify the mineral from hand-specimen properties (creedite)."
+  tags:
+  - monoclinic
+  - hard
+- id: natrolite
+  description: "Identify the mineral from hand-specimen properties (natrolite)."
+  tags:
+  - orthorhombic
+  - hard
+- id: ilmenite
+  description: "Identify the mineral from hand-specimen properties (ilmenite)."
+  tags:
+  - trigonal
+  - easy
+judge:
+  cmd: python3 judge.py
+grader:
+  cmd: python3 grader.py

@@ -1,0 +1,22 @@
+{
+ "id": "stibnite",
+ "answer": "stibnite",
+ "type": "mineral_species",
+ "accepted": [
+  "antimonite"
+ ],
+ "matchers": [
+  {
+   "kind": "keywords_any_word",
+   "values": [
+    "stibnite",
+    "antimonite"
+   ]
+  },
+  {
+   "kind": "no_hedge"
+  }
+ ],
+ "category": "orthorhombic",
+ "difficulty": "easy"
+}

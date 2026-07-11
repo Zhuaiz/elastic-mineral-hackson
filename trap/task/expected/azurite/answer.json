@@ -1,0 +1,19 @@
+{
+ "id": "azurite",
+ "answer": "azurite",
+ "type": "mineral_species",
+ "accepted": [],
+ "matchers": [
+  {
+   "kind": "keywords_any_word",
+   "values": [
+    "azurite"
+   ]
+  },
+  {
+   "kind": "no_hedge"
+  }
+ ],
+ "category": "monoclinic",
+ "difficulty": "easy"
+}

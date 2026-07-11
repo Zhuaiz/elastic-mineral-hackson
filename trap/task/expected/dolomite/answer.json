@@ -1,0 +1,19 @@
+{
+ "id": "dolomite",
+ "answer": "dolomite",
+ "type": "mineral_species",
+ "accepted": [],
+ "matchers": [
+  {
+   "kind": "keywords_any_word",
+   "values": [
+    "dolomite"
+   ]
+  },
+  {
+   "kind": "no_hedge"
+  }
+ ],
+ "category": "trigonal",
+ "difficulty": "hard"
+}

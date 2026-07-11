@@ -1,0 +1,19 @@
+{
+ "id": "albite",
+ "answer": "albite",
+ "type": "mineral_species",
+ "accepted": [],
+ "matchers": [
+  {
+   "kind": "keywords_any_word",
+   "values": [
+    "albite"
+   ]
+  },
+  {
+   "kind": "no_hedge"
+  }
+ ],
+ "category": "triclinic",
+ "difficulty": "hard"
+}

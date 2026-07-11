@@ -1,0 +1,22 @@
+{
+ "id": "fluorite",
+ "answer": "fluorite",
+ "type": "mineral_species",
+ "accepted": [
+  "fluorspar"
+ ],
+ "matchers": [
+  {
+   "kind": "keywords_any_word",
+   "values": [
+    "fluorite",
+    "fluorspar"
+   ]
+  },
+  {
+   "kind": "no_hedge"
+  }
+ ],
+ "category": "isometric",
+ "difficulty": "hard"
+}

@@ -1,0 +1,19 @@
+{
+ "id": "molybdenite",
+ "answer": "molybdenite",
+ "type": "mineral_species",
+ "accepted": [],
+ "matchers": [
+  {
+   "kind": "keywords_any_word",
+   "values": [
+    "molybdenite"
+   ]
+  },
+  {
+   "kind": "no_hedge"
+  }
+ ],
+ "category": "hexagonal",
+ "difficulty": "easy"
+}

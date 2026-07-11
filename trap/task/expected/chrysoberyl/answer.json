@@ -1,0 +1,19 @@
+{
+ "id": "chrysoberyl",
+ "answer": "chrysoberyl",
+ "type": "mineral_species",
+ "accepted": [],
+ "matchers": [
+  {
+   "kind": "keywords_any_word",
+   "values": [
+    "chrysoberyl"
+   ]
+  },
+  {
+   "kind": "no_hedge"
+  }
+ ],
+ "category": "orthorhombic",
+ "difficulty": "hard"
+}

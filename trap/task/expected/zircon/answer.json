@@ -1,0 +1,19 @@
+{
+ "id": "zircon",
+ "answer": "zircon",
+ "type": "mineral_species",
+ "accepted": [],
+ "matchers": [
+  {
+   "kind": "keywords_any_word",
+   "values": [
+    "zircon"
+   ]
+  },
+  {
+   "kind": "no_hedge"
+  }
+ ],
+ "category": "tetragonal",
+ "difficulty": "medium"
+}

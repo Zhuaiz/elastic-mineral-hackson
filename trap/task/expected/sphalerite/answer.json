@@ -1,0 +1,19 @@
+{
+ "id": "sphalerite",
+ "answer": "sphalerite",
+ "type": "mineral_species",
+ "accepted": [],
+ "matchers": [
+  {
+   "kind": "keywords_any_word",
+   "values": [
+    "sphalerite"
+   ]
+  },
+  {
+   "kind": "no_hedge"
+  }
+ ],
+ "category": "isometric",
+ "difficulty": "easy"
+}
