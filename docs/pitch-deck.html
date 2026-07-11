@@ -1,5 +1,5 @@
 <meta charset="utf-8">
-<title>矿物鉴定 Agent · Elastic 融合检索 · Pitch</title>
+<title>石头记 · 矿物鉴定 Agent · Pitch</title>
 <style>
   :root {
     --ground: #0e1a17; --panel: #14241f; --panel-2: #1a2e28;
@@ -101,11 +101,26 @@
     font-variant-numeric: tabular-nums; }
   .note { font-size: .82rem; color: var(--faint); font-family: var(--mono); margin-top: .8rem; }
 
-  .stackgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap: 1rem; margin-top: .5rem; }
-  .stackgrid .c { padding: 1.1rem; border-radius: 14px; background: var(--panel); border: 1px solid var(--line); }
-  .stackgrid .c .k { font-family: var(--mono); font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; color: var(--malachite); }
-  .stackgrid .c .v { font-size: 1.05rem; font-weight: 650; margin-top: .35rem; }
-  .stackgrid .c .d { color: var(--muted); font-size: .85rem; margin-top: .25rem; line-height: 1.45; }
+  /* brand mark */
+  .brand { display: flex; align-items: center; gap: 1.1rem; margin-bottom: 2.2rem; }
+  .brand .gem { width: 58px; height: 58px; flex: none; }
+  .brand .nm { font-size: 2.1rem; font-weight: 800; letter-spacing: .14em; line-height: 1; }
+  .brand .sub { font-family: var(--mono); font-size: .7rem; letter-spacing: .24em;
+    color: var(--muted); margin-top: .45rem; text-transform: uppercase; }
+
+  /* architecture diagram */
+  .arch { flex: 1; display: flex; align-items: center; min-height: 0; }
+  .arch svg { width: 100%; height: 100%; max-height: 70vh; }
+  .arch .bx { fill: var(--panel); stroke: var(--line); stroke-width: 1.2; }
+  .arch .bx2 { fill: var(--panel-2); stroke: var(--malachite); stroke-width: 1.6; }
+  .arch .bt { font-family: var(--sans); font-size: 19px; font-weight: 700; fill: var(--ink); }
+  .arch .bd { font-family: var(--sans); font-size: 13.5px; fill: var(--muted); }
+  .arch .bm { font-family: var(--mono); font-size: 16px; font-weight: 600; fill: var(--malachite); }
+  .arch .bandlbl { font-family: var(--mono); font-size: 13px; font-weight: 600;
+    fill: var(--faint); letter-spacing: .14em; }
+  .arch .ln { stroke: var(--faint); stroke-width: 1.6; fill: none; marker-end: url(#ar); }
+  .arch .dash { stroke: var(--malachite); stroke-width: 1.6; stroke-dasharray: 5 5; fill: none; }
+  .arch .dashlbl { font-family: var(--mono); font-size: 12px; fill: var(--malachite); }
 
   .uses { display: flex; gap: .6rem; flex-wrap: wrap; margin-top: 1rem; }
   .uses span { padding: .5rem 1rem; border-radius: 999px; background: var(--panel);
@@ -142,6 +157,16 @@
     <div class="catalog"><b>SPECIMEN Nº 01</b><span>AGENTHACK · BEIJING · 2026</span></div>
     <div class="body">
       <div>
+        <div class="brand">
+          <svg class="gem" viewBox="0 0 48 48" aria-hidden="true">
+            <path d="M14 8 L34 8 L44 20 L24 44 L4 20 Z" fill="color-mix(in oklab, var(--malachite) 14%, transparent)" stroke="var(--malachite)" stroke-width="2.4" stroke-linejoin="round"/>
+            <path d="M4 20 H44 M14 8 L18 20 M34 8 L30 20 M18 20 L24 44 M30 20 L24 44" stroke="var(--malachite)" stroke-width="1.5" fill="none" stroke-linejoin="round" opacity=".8"/>
+          </svg>
+          <div>
+            <div class="nm">石头记</div>
+            <div class="sub">Shi Tou Ji · Mineral Agent</div>
+          </div>
+        </div>
         <div class="eyebrow">Elastic · 融合检索 · AI Agent</div>
         <h1>看一块石头，<br>就说出它是什么矿物。</h1>
         <p class="lead">一个用 Elasticsearch 融合检索（RRF）驱动的矿物鉴定 Agent —— 照片、属性、硬度，一次查询融合定种。</p>
@@ -182,7 +207,7 @@
       <div class="eyebrow">我们的答案</div>
       <h2>把三种信号<br><strong class="hl">融合</strong>进一次检索。</h2>
       <p class="lead">每个标本在 Elasticsearch 里同时可被三种方式检索——图像向量、属性全文、结构化字段。
-        ES 9.3 的 <span style="font-family:var(--mono);color:var(--malachite)">rrf</span> retriever 把它们在<strong class="hl">一个查询</strong>里倒数排名融合。这是 Elastic 原生能力，不是我们拼的。</p>
+        ES 9.3 的 <span style="font-family:var(--mono);color:var(--malachite)">rrf</span> retriever 在<strong class="hl">一个查询</strong>里把三路做倒数排名融合，9.3 原生自带这项能力。</p>
     </div>
   </section>
 
@@ -216,7 +241,7 @@
           <div class="v">候选矿物<br>按种名投票定种</div>
         </div>
       </div>
-      <p class="lead">图和文在<strong class="hl2">同一个 1024 维空间</strong>——文字能搜图、图能搜图。三路正交信号，倒数排名融合成一个结果。</p>
+      <p class="lead">图和文在<strong class="hl2">同一个 1024 维空间</strong>——文字能搜图，图也能搜图。三路信号互补，倒数排名融合成一个结果。</p>
     </div>
   </section>
 
@@ -224,7 +249,7 @@
   <section class="slide" aria-label="AgentBuilder">
     <div class="catalog"><b>Nº 06</b><span>AGENT BUILDER</span></div>
     <div class="body">
-      <div class="eyebrow">Elastic 生态，不只是检索</div>
+      <div class="eyebrow">Kibana 里直接搭 agent</div>
       <h2>mineralogist agent<br>自己决定怎么查。</h2>
       <p class="lead">我给它两个 ES|QL 属性工具和一个融合检索工具，它自主编排：先按硬度筛，还是先按图搜。</p>
       <div class="amb">
@@ -238,17 +263,17 @@
   <section class="slide" aria-label="演示">
     <div class="catalog"><b>Nº 07</b><span>LIVE DEMO · 拍照识矿</span></div>
     <div class="body">
-      <div class="eyebrow">让屏幕说话</div>
+      <div class="eyebrow">现场演示</div>
       <h2>三栏并排：<br>只看图 · 只看字 · <strong class="hl">RRF 融合</strong>。</h2>
-      <p class="lead">拖入一张标本照片 → 只看图，玛瑙玉髓碧玉混在一起；补上属性和硬度过滤 → 融合这一栏第一名立刻锁定。
-        <strong class="hl">这一栏赢，就是 RRF 的价值。</strong></p>
+      <p class="lead">拖入一张标本照片 → 只看图，玛瑙玉髓碧玉混在一起；补上属性和硬度过滤 → 融合栏第一名先锁定正确种。
+        <strong class="hl">哪一栏先答对，一目了然。</strong></p>
       <p class="note">▸ 切到 localhost:8000 演示；再切 Kibana Agent Builder 中文提问一次。</p>
     </div>
   </section>
 
   <!-- 08 Proof -->
   <section class="slide" aria-label="证明">
-    <div class="catalog"><b>Nº 08</b><span>PROOF · 不自说自话</span></div>
+    <div class="catalog"><b>Nº 08</b><span>PROOF · 公开可复现</span></div>
     <div class="body">
       <div class="eyebrow">作答准确率 vs 检索强度</div>
       <h2>检索越强，作答越准。</h2>
@@ -266,12 +291,60 @@
   <section class="slide" aria-label="技术栈">
     <div class="catalog"><b>Nº 09</b><span>THE STACK</span></div>
     <div class="body">
-      <div class="eyebrow">用了什么</div>
-      <div class="stackgrid">
-        <div class="c"><div class="k">检索后端</div><div class="v">阿里云 ES 9.3.2</div><div class="d">Enterprise license · RRF / Agent Builder / Workflows 全可用</div></div>
-        <div class="c"><div class="k">嵌入</div><div class="v">jina-clip-v2</div><div class="d">图文同一 1024 维空间 · 本地 MPS 算好写入 dense_vector</div></div>
-        <div class="c"><div class="k">属性数据</div><div class="v">Mindat + Wikipedia</div><div class="d">硬度/条痕/晶系/密度 + 描述文本</div></div>
-        <div class="c"><div class="k">评测</div><div class="v">trapstreet</div><div class="d">公开榜 · 每个数字是真实一次运行</div></div>
+      <div class="eyebrow">整条链路</div>
+      <div class="arch">
+      <svg viewBox="0 0 1160 560" role="img" aria-label="架构图：赛前建索引与现场一次查询两条链路，汇于 Elasticsearch">
+        <defs>
+          <marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" fill="var(--faint)"/>
+          </marker>
+        </defs>
+
+        <text x="20" y="26" class="bandlbl">① 建索引 · 赛前一晚</text>
+        <rect class="bx" x="20" y="46" width="252" height="78" rx="14"/>
+        <text x="40" y="79" class="bt">标本照片</text>
+        <text x="40" y="103" class="bd">MineralImage5k · 5,498 张 · 98 种</text>
+        <rect class="bx" x="20" y="150" width="252" height="78" rx="14"/>
+        <text x="40" y="183" class="bt">属性与描述</text>
+        <text x="40" y="207" class="bd">Mindat 硬度/条痕/晶系 · Wikipedia</text>
+        <rect class="bx" x="360" y="46" width="236" height="78" rx="14"/>
+        <text x="380" y="79" class="bt">jina-clip-v2</text>
+        <text x="380" y="103" class="bd">本地 MPS · 图文同一 1024 维</text>
+        <rect class="bx" x="684" y="46" width="232" height="182" rx="14"/>
+        <text x="704" y="82" class="bt">Elasticsearch 9.3.2</text>
+        <text x="704" y="112" class="bd">minerals-images · 5,498 向量</text>
+        <text x="704" y="136" class="bd">minerals-species · 98 种属性</text>
+        <text x="704" y="160" class="bd">阿里云 · Enterprise license</text>
+        <path class="ln" d="M272 85 H352"/>
+        <path class="ln" d="M596 85 H676"/>
+        <path class="ln" d="M272 189 H676"/>
+
+        <text x="20" y="306" class="bandlbl">② 一次查询 · 现场</text>
+        <rect class="bx" x="20" y="326" width="252" height="78" rx="14"/>
+        <text x="40" y="359" class="bt">提问</text>
+        <text x="40" y="383" class="bd">标本照片 或 中文属性描述</text>
+        <rect class="bx" x="360" y="326" width="236" height="78" rx="14"/>
+        <text x="380" y="359" class="bt">Agent Builder</text>
+        <text x="380" y="383" class="bd">mineralogist · Qwen 连接器</text>
+        <rect class="bx2" x="684" y="326" width="232" height="110" rx="14"/>
+        <text x="704" y="358" class="bm">rrf retriever</text>
+        <text x="704" y="386" class="bd">图像 kNN + 属性 BM25</text>
+        <text x="704" y="410" class="bd">+ 硬度 / 晶系过滤</text>
+        <rect class="bx" x="984" y="326" width="156" height="78" rx="14"/>
+        <text x="1002" y="359" class="bt">种名 + 证据</text>
+        <text x="1002" y="383" class="bd">top-10 按种投票</text>
+        <path class="ln" d="M272 365 H352"/>
+        <path class="ln" d="M596 365 H676"/>
+        <path class="ln" d="M916 365 H976"/>
+
+        <path class="dash" d="M800 232 V322"/>
+        <text x="812" y="284" class="dashlbl">查同一份索引</text>
+
+        <rect class="bx" x="984" y="446" width="156" height="70" rx="14"/>
+        <text x="1002" y="476" class="bt">trapstreet</text>
+        <text x="1002" y="499" class="bd">公开评测 · 可复现</text>
+        <path class="ln" d="M1062 404 V438"/>
+      </svg>
       </div>
     </div>
   </section>
@@ -280,22 +353,22 @@
   <section class="slide" aria-label="价值">
     <div class="catalog"><b>Nº 10</b><span>VALUE</span></div>
     <div class="body">
-      <div class="eyebrow">这套范式能用在哪</div>
+      <div class="eyebrow">还能用在哪</div>
       <h2>凡是"看到一块石头<br>想知道它是什么"。</h2>
       <div class="uses">
         <span>🏔 地质勘探</span><span>💎 宝石鉴定</span><span>📚 地质教育</span><span>🔬 野外科考</span><span>🏛 博物馆藏品</span>
       </div>
-      <p class="lead">融合检索 + Agent 的范式，对任何"多模态证据、细粒度分类、需要可解释"的领域都可迁移。</p>
+      <p class="lead">同一套融合检索 + agent 的搭法，换一份数据就能搬到其他多模态证据、细粒度分类的领域。</p>
     </div>
   </section>
 
   <!-- 11 Closing -->
   <section class="slide" aria-label="结尾">
-    <div class="catalog"><b>Nº 11</b><span>ONE THING TO REMEMBER</span></div>
+    <div class="catalog"><b>Nº 11</b><span>CLOSING</span></div>
     <div class="body">
-      <div class="eyebrow">如果只记住一句</div>
-      <p class="memory">单一模态搜不准细粒度矿物；Elastic 的 <strong>RRF 融合检索</strong>把图像、属性、硬度过滤合到一个查询里——<strong>作答准确率随融合强度上升，我们用公开可复现的数字证明了。</strong></p>
-      <div class="title-mark"><span class="dot"></span><span class="who">谢谢 · github.com/Zhuaiz/elastic-mineral-hackson</span></div>
+      <div class="eyebrow">结论</div>
+      <p class="memory">细粒度矿物靠单一模态搜不准。<strong>RRF</strong> 把图像、属性和硬度过滤合进一个查询，作答准确率随检索增强一路抬升——数字挂在 trapstreet 公开榜上，谁都能复现。</p>
+      <div class="title-mark"><span class="dot"></span><span class="who">石头记 · 谢谢 · github.com/Zhuaiz/elastic-mineral-hackson</span></div>
     </div>
   </section>
 
