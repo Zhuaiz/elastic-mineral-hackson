@@ -64,7 +64,7 @@ source .env && .venv/bin/python demo/app.py   # → http://localhost:8000
 四个检索配置就是 `trap.yaml` 里的四个命名 task，`tp run` 即可复现榜上任意一行：
 
 ```bash
-cp .env.example .env && vi .env             # 填 ES_URL + ES_USER/ES_PASSWORD
+cp .env.example .env && vi .env             # 填 ES_URL + ES_API_KEY（见下）
 pip install -r trap/solutions/requirements.txt   # 只需 elasticsearch 客户端
 source .env
 
@@ -77,6 +77,30 @@ tp submit mineral-species-id  # 上传自己这次的 run
 
 每个 case：`trap/solutions/solve.py` 读题面 → ES 检索证据 → qwen-plus 作答 → judge 判分，
 作答和检索都在 ES 集群上（本机零模型）。
+
+### 公开 ES 端点 + 限权 key（让任何人都能跑）
+
+端点已在 `.env.example` 里公开。复现用的 `ES_API_KEY` 必须是一个**只读 + 只调推理端点**的
+限权 key —— **绝不要公开超管 key**（它能删库、无上限刷推理账单，泄露即灾难）。
+
+集群 owner 用超管权限生成限权 key（`role_descriptors` 把权限锁死在 minerals-* 只读 +
+`monitor_inference`），把返回的 `encoded` 值作为公开的 `ES_API_KEY`：
+
+```bash
+curl -s -H "Authorization: ApiKey $ADMIN_KEY" -H "Content-Type: application/json" \
+  "$ES_URL/_security/api_key" -d '{
+    "name": "mineral-public-reproduce",
+    "role_descriptors": {
+      "minerals_ro_infer": {
+        "cluster": ["monitor_inference"],
+        "indices": [{"names": ["minerals-*"], "privileges": ["read", "view_index_metadata"]}]
+      }
+    }
+  }' | python3 -c "import json,sys; print(json.load(sys.stdin)['encoded'])"
+```
+
+这个 key 只能读 minerals-* 索引 + 调 qwen 推理端点，**不能删/写/改集群任何东西**。
+仍建议在阿里云侧对 AI 平台设预算上限，防止付费推理被刷量。
 
 ### 关于"能不能跑出一模一样的结果"
 
