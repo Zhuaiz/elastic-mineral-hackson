@@ -1,13 +1,26 @@
-"""判分 + 构建 report.json + tp submit 上传一个 solution 的跑分。
+"""判分 + 构建 prod wire report + POST /api/submit 上传一个 solution 的跑分。
 
-用法: python3 trap/solutions/submit.py <config> "<engine>" "<strategy>"
-  config: answers/<config>.txt 里的 id|answer（每行）
-输出: 本地准确率 + report.json，并调用 tp submit mineral-id --report ...
+用法:
+  python3 trap/solutions/submit.py <config> --engine "..." --strategy "..." \
+      [--solution-commit <sha>] [--model qwen-plus]
+  config: 读 answers/<config>.txt 的 id|answer（每行）
+
+trapstreet prod 契约（tp CLI 0.4.0 的提交路径已过时，prod 返回 404）:
+  - POST https://trapstreet.run/api/submit，Authorization: Bearer <api_key>
+  - body: cases_results 数组 + provenance.task/.solution 的 {repo, commit}
+  - provenance.task.commit 必须匹配平台已发布的任务版本
+    （自动从 GET /api/tasks/<id> 读 latest.commit_sha —— 不能用本地 HEAD）
+  - solution 身份 = (repo, commit)：想在榜单各占一行，每个配置要用
+    一个不同的、已推送到公开仓库的 commit（--solution-commit）
 """
+import argparse
 import datetime
 import json
+import os
 import subprocess
 import sys
+import urllib.error
+import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent.parent
@@ -15,6 +28,7 @@ TASK = ROOT / "trap" / "task"
 SOL = Path(__file__).resolve().parent
 TASK_ID = "mineral-species-id"
 REPO = "https://github.com/Zhuaiz/elastic-mineral-hackson"
+SERVER = "https://trapstreet.run"
 
 
 def judge_case(case_id: str, answer: str, work: Path) -> dict:
@@ -34,15 +48,45 @@ def judge_case(case_id: str, answer: str, work: Path) -> dict:
     return json.loads(out.stdout)
 
 
+def published_task_commit() -> str:
+    """平台上该任务已发布版本的 commit——provenance.task.commit 必须匹配它。"""
+    with urllib.request.urlopen(f"{SERVER}/api/tasks/{TASK_ID}", timeout=30) as r:
+        return json.load(r)["task"]["latest"]["commit_sha"]
+
+
+def ensure_pushed(commit: str) -> None:
+    """solution commit 必须已在公开仓库可见，否则平台校验会拒。"""
+    subprocess.run(["git", "fetch", "-q", "origin", "main"], cwd=ROOT, check=True)
+    ok = subprocess.run(
+        ["git", "merge-base", "--is-ancestor", commit, "origin/main"],
+        cwd=ROOT).returncode == 0
+    if not ok:
+        raise SystemExit(
+            f"commit {commit[:10]} 不在 origin/main 上——先 git push 再提交。")
+
+
 def main() -> None:
-    config, engine, strategy = sys.argv[1], sys.argv[2], sys.argv[3]
+    ap = argparse.ArgumentParser()
+    ap.add_argument("config", help="answers/<config>.txt")
+    ap.add_argument("--engine", required=True)
+    ap.add_argument("--strategy", required=True)
+    ap.add_argument("--model", default="qwen-plus")
+    ap.add_argument("--solution-commit", default=None,
+                    help="该 solution 的身份 commit（默认 HEAD；不同配置须不同）")
+    args = ap.parse_args()
+
     answers = {}
-    for line in (SOL / "answers" / f"{config}.txt").read_text().splitlines():
+    for line in (SOL / "answers" / f"{args.config}.txt").read_text().splitlines():
         if "|" in line:
             cid, ans = line.split("|", 1)
             answers[cid.strip()] = ans.strip()
 
-    work = SOL / "_work" / config
+    expected_ids = sorted(p.name for p in (TASK / "expected").iterdir() if p.is_dir())
+    missing = set(expected_ids) - set(answers)
+    if missing:
+        raise SystemExit(f"answers/{args.config}.txt 缺 {len(missing)} 个 case: {sorted(missing)}")
+
+    work = SOL / "_work" / args.config
     cases, n_pass = [], 0
     for cid, ans in answers.items():
         metrics = judge_case(cid, ans, work)
@@ -51,37 +95,41 @@ def main() -> None:
                       "metrics": metrics, "skipped": False})
 
     acc = n_pass / len(cases)
-    print(f"[{config}] {n_pass}/{len(cases)} = {acc:.1%}")
+    print(f"[{args.config}] {n_pass}/{len(cases)} = {acc:.1%}")
 
-    # prod 的 wire 格式（比 tp 0.4.0 新）：cases_results + provenance，POST /api/submit。
-    # tp CLI 仍用旧的 /api/submit/{task} 路径（prod 上 404），故直接构造并 POST。
-    commit = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT,
-                            capture_output=True, text=True).stdout.strip()
+    solution_commit = args.solution_commit or subprocess.run(
+        ["git", "rev-parse", "HEAD"], cwd=ROOT,
+        capture_output=True, text=True).stdout.strip()
+    ensure_pushed(solution_commit)
+    task_commit = published_task_commit()
+
     now = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
     report = {
         "task_id": TASK_ID, "cases_results": cases,
         "started_at": now, "finished_at": now,
-        "provenance": {"task": {"repo": REPO, "commit": commit},
-                       "solution": {"repo": REPO, "commit": commit}},
-        "metadata": {"engine": engine, "framework": "elastic-agenthack",
-                     "strategy": strategy, "model": "qwen-plus"},
+        "provenance": {"task": {"repo": REPO, "commit": task_commit},
+                       "solution": {"repo": REPO, "commit": solution_commit}},
+        "metadata": {"engine": args.engine, "framework": "elastic-agenthack",
+                     "strategy": args.strategy, "model": args.model},
     }
-    report_path = SOL / f"wire_{config}.json"
+    report_path = SOL / f"wire_{args.config}.json"
     json.dump(report, open(report_path, "w"), indent=2)
 
-    import os
-    import urllib.request
     key = os.environ.get("TP_API_KEY") or json.load(
         open(os.path.expanduser("~/.config/trapstreet/auth.json")))["api_key"]
-    print(f"submitting {report_path.name} to prod /api/submit ...")
+    print(f"submitting {report_path.name} (solution={solution_commit[:10]}) ...")
     req = urllib.request.Request(
-        "https://trapstreet.run/api/submit", data=report_path.read_bytes(),
+        f"{SERVER}/api/submit", data=report_path.read_bytes(),
         headers={"authorization": f"Bearer {key}", "content-type": "application/json"},
         method="POST")
-    with urllib.request.urlopen(req, timeout=60) as resp:
-        run = json.loads(resp.read()).get("run", {})
+    try:
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            run = json.loads(resp.read()).get("run", {})
+    except urllib.error.HTTPError as e:
+        print(f"  提交被拒 HTTP {e.code}: {e.read().decode()[:500]}", file=sys.stderr)
+        raise SystemExit(1)
     print(f"  ok -> score {run.get('score')} ({run.get('cases_passed')}/{run.get('cases_total')})")
-    print(f"  https://trapstreet.run/tasks/{TASK_ID}")
+    print(f"  {SERVER}/tasks/{TASK_ID}")
 
 
 if __name__ == "__main__":

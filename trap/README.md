@@ -29,22 +29,24 @@
 > 诚实提醒：准确率是**爬升到平台**，不是无限涨——上下文喂太多会引入噪声。
 > 画成曲线让它自己说话，比断言"越多越好"更可信。
 
-跑法（需 embed + index 完成、ES 就绪、配好作答后端）：
+跑法（需 embed + index 完成、ES 就绪；作答自动走 ES `/_inference/completion/qwen-plus`）：
 ```bash
-source .env && .venv/bin/python trap/eval/accuracy_vs_retrieval.py --limit 50
+source .env && .venv/bin/python trap/eval/accuracy_vs_retrieval.py
 ```
+同时会把每配置的作答写到 `trap/solutions/answers/<config>.txt`，供 `submit.py` 上传公开榜。
 
 `ablation.py` 是廉价补充：只测**检索命中率**（图像/文本/RRF 三路 top-1，不调模型），
 用来快速确认检索信号存在；作答准确率曲线才是对外呈现的主角。
 
 ## 层二 · `task/` — trapstreet 公开榜（可信数字）
 
-同一套题、同一个 judge，把层一里的两个头条配置搬到 trapstreet 公开榜上跑：
-- **`closed_book`**（裸模型）vs **`rrf_w100`**（满配 RRF agent）
-两个"真实的、不是嘴说的"数字，公开可验证。
+同一套题、同一个 judge，把层一的四个配置各作为一个 solution 搬到 trapstreet 公开榜：
+- **`closed_book`**（裸模型）/ **`bm25`** / **`image`**（两条单路）/ **`rrf_w100`**（满配 RRF agent）
+四个"真实的、不是嘴说的"数字，公开可验证。榜单上 solution 身份 = (repo, commit)，
+所以每个配置用一个独立的已推送 commit 提交（见 `solutions/submit.py --solution-commit`）。
 
-- `task/cases/*.json` — 50 题，题面是野外可观察属性，**刻意不含化学式**（化学式≈送答案）。
-- `task/reference.md` — 参考文档仅取 Wikipedia 摘要（CC BY-SA 4.0，已署名），公开安全。
+- `task/inputs/<id>/question.txt` + `task/expected/<id>/answer.json` — 50 题（trapstreet
+  官方格式），题面是野外可观察属性，**刻意不含化学式**（化学式≈送答案）。
 - `task/judge.py` — 种名归一化后精确匹配（creedite/credit、stibnite/antimonite 等收敛）。
 
 生成任务：`python3 trap/task/make_cases.py`

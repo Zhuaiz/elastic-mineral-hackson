@@ -32,12 +32,14 @@
 - 网页表单同 slug 会 **409**（不 bump 版本）；edit 页只改描述、pinned commit 冻结、**无删除按钮**。
 - 旧 slug `mineral-id` 是废弃的（pin 了 trapstreet 重构前的旧格式 commit）；canonical 用 `mineral-species-id`。
 
-## solution 运行器现状（可优化点）
+## solution 运行器现状（2026-07-11 已端到端本地化）
 
-- `build_solution.py`：本地对每个 case 的属性文字做 jina-clip-v2 编码 → ES RRF 检索（BM25 props_text
-  + 跨模态图像 kNN + 硬度过滤）→ 候选证据。
-- 作答在**浏览器经 Kibana Qwen 连接器**跑（qwen-plus）——因为阿里云 AI 平台端点是私网 VPC，
-  笔记本直连不通。若能拿到 Qwen 的公网可达端点（DashScope compatible-mode + key），
-  就能把作答也搬回本地脚本，`submit.py` 端到端一条命令跑完，不必手动经浏览器。
+- **不再需要浏览器**：ES 集群上有 `/_inference/completion/qwen-plus` 等推理端点
+  （`alibabacloud-ai-search` 服务，ES 在 VPC 内代理 AI 平台），本机 basic auth 直调即可。
+  Kibana 公网入口被阿里云 console 认证网关挡住（307），API 不可直调——但已不需要。
+- `trap/eval/accuracy_vs_retrieval.py`：端到端跑 4 配置（closed_book/bm25/image/rrf_w100）
+  × 50 case，判分复用 `judge.score`，并写出 `answers/<config>.txt` 供提交。
+- `submit.py`：`provenance.task.commit` 自动取平台已发布版本（不能用本地 HEAD）；
+  `--solution-commit` 指定该配置的身份 commit，提交前校验已推送。
 - `judge.py` 契约：读 `$TRAPTASK_PAYLOAD`（`outputs.case_stdout` / `outputs.case_meta.json` /
   `expected.answer.json`），输出 `{score, agent_answer, ...}`。种名归一化 + 同义词 + no-hedge。

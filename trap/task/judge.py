@@ -94,12 +94,8 @@ def whole_word_hit(answer: str, forms: set[str]) -> bool:
     return any(re.search(rf"\b{re.escape(f)}\b", low) for f in forms if f)
 
 
-def main() -> None:
-    payload = json.loads(os.environ["TRAPTASK_PAYLOAD"])
-    stdout = Path(payload["outputs"]["case_stdout"]).read_text()
-    exit_code = json.loads(Path(payload["outputs"]["case_meta.json"]).read_text())["exit_code"]
-    expected = json.loads(Path(payload["expected"]["answer.json"]).read_text())
-
+def score(expected: dict, stdout: str, exit_code: int = 0) -> dict:
+    """单 case 判分（可复用：CLI 契约与本地 eval 共用同一把尺）。"""
     base = {
         "agent_answer": extract_answer(stdout),
         "expected_answer": expected.get("answer"),
@@ -107,27 +103,30 @@ def main() -> None:
         "category": expected.get("category"),
         "difficulty": expected.get("difficulty"),
     }
-
     if exit_code != 0:
-        print(json.dumps({"score": 0.0, "reason": f"solution exited {exit_code}", **base}))
-        return
+        return {"score": 0.0, "reason": f"solution exited {exit_code}", **base}
     answer = base["agent_answer"]
     if not answer:
-        print(json.dumps({"score": 0.0, "reason": "empty answer", **base}))
-        return
+        return {"score": 0.0, "reason": "empty answer", **base}
     if is_hedge(answer):
-        print(json.dumps({"score": 0.0, "reason": "hedged answer", **base}))
-        return
+        return {"score": 0.0, "reason": "hedged answer", **base}
 
     forms = accepted_forms(expected)
-    got = normalize(answer)
-    ok = got in forms or whole_word_hit(answer, forms)
-    print(json.dumps({
+    ok = normalize(answer) in forms or whole_word_hit(answer, forms)
+    return {
         "score": 1.0 if ok else 0.0,
         "reason": f"answer {answer.strip()[:40]!r} " + ("matched" if ok else "≠")
                   + f" {normalize(expected['answer'])!r}",
         **base,
-    }))
+    }
+
+
+def main() -> None:
+    payload = json.loads(os.environ["TRAPTASK_PAYLOAD"])
+    stdout = Path(payload["outputs"]["case_stdout"]).read_text()
+    exit_code = json.loads(Path(payload["outputs"]["case_meta.json"]).read_text())["exit_code"]
+    expected = json.loads(Path(payload["expected"]["answer.json"]).read_text())
+    print(json.dumps(score(expected, stdout, exit_code)))
 
 
 if __name__ == "__main__":
