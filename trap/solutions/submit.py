@@ -12,6 +12,11 @@ trapstreet prod 契约（tp CLI 0.4.0 的提交路径已过时，prod 返回 404
     （自动从 GET /api/tasks/<id> 读 latest.commit_sha —— 不能用本地 HEAD）
   - solution 身份 = (repo, commit)：想在榜单各占一行，每个配置要用
     一个不同的、已推送到公开仓库的 commit（--solution-commit）
+  - 榜单 ENGINE 列 = profile.model[0]（只在 solution 首次创建时落库）；
+    LATENCY 列 = started_at_utc→finished_at_utc 墙钟毫秒（缺省时回退
+    per-case duration 求和）。metadata.* 不在 wire 格式里，会被忽略。
+  - timing 优先读 eval 产出的 trap/eval/results/run_meta.json（accuracy_
+    vs_retrieval.py 生成）；没有则起止都用当前时刻（latency 记 0，慎用）。
 """
 import argparse
 import datetime
@@ -86,12 +91,24 @@ def main() -> None:
     if missing:
         raise SystemExit(f"answers/{args.config}.txt 缺 {len(missing)} 个 case: {sorted(missing)}")
 
+    # timing：eval 会把每配置的起止时间 + 每 case 耗时写到 run_meta.json
+    meta_path = ROOT / "trap" / "eval" / "results" / "run_meta.json"
+    timing = {}
+    if meta_path.exists():
+        timing = json.load(open(meta_path)).get(args.config, {})
+    if not timing:
+        now = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
+        timing = {"started_at_utc": now, "finished_at_utc": now, "durations": {}}
+        print("⚠️ 无 run_meta.json timing，latency 将记 0")
+    durations = timing.get("durations", {})
+
     work = SOL / "_work" / args.config
     cases, n_pass = [], 0
     for cid, ans in answers.items():
         metrics = judge_case(cid, ans, work)
         n_pass += int(metrics["score"] == 1.0)
-        cases.append({"case_id": cid, "exit_code": 0, "duration": None,
+        cases.append({"case_id": cid, "exit_code": 0,
+                      "duration": durations.get(cid),
                       "metrics": metrics, "skipped": False})
 
     acc = n_pass / len(cases)
@@ -103,14 +120,16 @@ def main() -> None:
     ensure_pushed(solution_commit)
     task_commit = published_task_commit()
 
-    now = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
     report = {
         "task_id": TASK_ID, "cases_results": cases,
-        "started_at": now, "finished_at": now,
+        "started_at_utc": timing["started_at_utc"],
+        "finished_at_utc": timing["finished_at_utc"],
         "provenance": {"task": {"repo": REPO, "commit": task_commit},
                        "solution": {"repo": REPO, "commit": solution_commit}},
-        "metadata": {"engine": args.engine, "framework": "elastic-agenthack",
-                     "strategy": args.strategy, "model": args.model},
+        # profile.model[0] → 榜单 ENGINE 列（solution 首建时落库）
+        "profile": {"model": [args.engine], "framework": ["elastic-agenthack"]},
+        "environment": {"strategy": args.strategy, "answer_model": args.model,
+                        "retrieval_config": args.config},
     }
     report_path = SOL / f"wire_{args.config}.json"
     json.dump(report, open(report_path, "w"), indent=2)

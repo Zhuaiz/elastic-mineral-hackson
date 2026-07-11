@@ -23,6 +23,7 @@ VPC 内代理 AI 平台，本机只需 ES basic auth —— 不再依赖 Kibana 
      + trap/solutions/answers/<config>.txt
 """
 import argparse
+import datetime
 import json
 import os
 import re
@@ -181,21 +182,31 @@ def main() -> None:
     ans_dir.mkdir(parents=True, exist_ok=True)
 
     result = {}
+    run_meta: dict[str, dict] = {}
     for cfg in configs:
-        def run_case(case: dict) -> tuple[dict, str, dict]:
+        def run_case(case: dict) -> tuple[dict, str, dict, float]:
+            c0 = time.time()
             vec = img_by_species.get(case["expected"]["answer"])
             ctx = build_context(retrieve(es, cfg, case["clue"], vec, case["hardness"]))
             ans = answer_fn(case["question"], ctx)
-            return case, ans, score(case["expected"], ans)
+            return case, ans, score(case["expected"], ans), time.time() - c0
 
         t0 = time.time()
+        started = datetime.datetime.now(datetime.timezone.utc)
         with ThreadPoolExecutor(max_workers=ANSWER_WORKERS) as pool:
             rows = list(pool.map(run_case, cases))
+        finished = datetime.datetime.now(datetime.timezone.utc)
         # 压平换行：answers 文件是 id|answer 每行一条，多行作答会破坏格式
         # （judge 对 >8 词的长文一律 0 分，压平不改变判分结果）
         (ans_dir / f"{cfg}.txt").write_text(
-            "".join(f"{c['id']}|{' '.join(a.split())}\n" for c, a, _ in rows))
-        acc = sum(m["score"] for _, _, m in rows) / len(rows)
+            "".join(f"{c['id']}|{' '.join(a.split())}\n" for c, a, _, _ in rows))
+        # 提交用 timing：wall-clock 起止（平台 LATENCY 列）+ 每 case 耗时
+        run_meta[cfg] = {
+            "started_at_utc": started.isoformat(timespec="seconds"),
+            "finished_at_utc": finished.isoformat(timespec="seconds"),
+            "durations": {c["id"]: round(d, 3) for c, _, _, d in rows},
+        }
+        acc = sum(m["score"] for _, _, m, _ in rows) / len(rows)
         result[cfg] = round(acc, 4)
         bar = "█" * round(acc * 20)
         print(f"{cfg:<12} {acc:>7.1%}  {bar}  "
@@ -213,7 +224,8 @@ def main() -> None:
                "context_k": CONTEXT_K, "answer_model": args.model,
                "accuracy_by_config": result},
               open(out / "accuracy_vs_retrieval.json", "w"), ensure_ascii=False, indent=1)
-    print(f"结果已存 {out / 'accuracy_vs_retrieval.json'}")
+    json.dump(run_meta, open(out / "run_meta.json", "w"), indent=1)
+    print(f"结果已存 {out / 'accuracy_vs_retrieval.json'}（timing → run_meta.json）")
 
 
 if __name__ == "__main__":
