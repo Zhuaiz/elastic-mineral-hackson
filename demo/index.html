@@ -76,6 +76,10 @@
     text-transform: uppercase; color: var(--malachite); }
   .banner .v { font-size: 1.5rem; font-weight: 800; text-transform: capitalize; }
   .banner .lat { margin-left: auto; font-family: var(--mono); font-size: .72rem; color: var(--faint); }
+  .banner .loc { font-family: var(--mono); font-size: .74rem; color: var(--muted);
+    text-decoration: none; border-bottom: 1px dotted var(--faint); }
+  .banner .loc:hover { color: var(--malachite); border-bottom-color: var(--malachite); }
+  .cand .pin { color: var(--faint); font-size: .72rem; font-family: var(--mono); }
 
   /* 三栏赛马 */
   .cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
@@ -158,6 +162,7 @@
   <div class="banner" id="banner">
     <span class="k">RRF 融合判定</span>
     <span class="v" id="bannerSpecies">—</span>
+    <a class="loc" id="bannerLoc" target="_blank" rel="noopener" style="display:none"></a>
     <span class="lat" id="bannerLat"></span>
   </div>
 
@@ -209,7 +214,7 @@ fetch('/samples').then(r => r.json()).then(samples => {
     });
     setImage(dataUrl);
     $('text').value = s.text;
-    $('hardness').value = s.hardness;
+    $('hardness').value = s.hardness ?? '';
     run();
   });
 });
@@ -256,6 +261,15 @@ function render(results, secs) {
   if (verdict) {
     $('bannerSpecies').textContent = verdict;
     $('bannerLat').textContent = `${secs.toFixed(1)}s · 5,498 向量 · 一次 rrf 查询`;
+    const loc = results.rrf[0].locality;
+    if (loc) {
+      // 模式产地 = 该矿种首次被描述的地点（Mindat），是物种档案而非本标本来源
+      $('bannerLoc').textContent = `📍 模式产地 ${loc.name} · ${loc.lat}°, ${loc.lon}°`;
+      $('bannerLoc').href = `https://www.openstreetmap.org/?mlat=${loc.lat}&mlon=${loc.lon}#map=6/${loc.lat}/${loc.lon}`;
+      $('bannerLoc').style.display = '';
+    } else {
+      $('bannerLoc').style.display = 'none';
+    }
     $('banner').classList.add('show');
   }
   const ctaCol = !results.rrf && inferredUsed ? `
@@ -278,7 +292,8 @@ function render(results, secs) {
         ${c.thumb ? `<img loading="lazy" src="/thumb/${c.thumb.replace('data/images/','')}" onerror="this.style.visibility='hidden'">` : '<div style="width:44px"></div>'}
         <div>
           <div class="name">${c.species}</div>
-          <div class="meta">${c.crystal_system || '?'} · H ${c.hardness_min ?? '?'}–${c.hardness_max ?? '?'}</div>
+          <div class="meta">${c.crystal_system || '?'} · H ${c.hardness_min ?? '?'}–${c.hardness_max ?? '?'}${
+            c.locality ? ` <span class="pin" title="模式产地 ${c.locality.name} (${c.locality.lat}°, ${c.locality.lon}°)">📍${c.locality.name.split(',').pop().trim()}</span>` : ''}</div>
         </div>
         <div class="score">${score}${isWinner && i > 0 ? `<br>#${i + 1}` : ''}</div>
       </div>`; }).join('') : '<div class="empty">无结果</div>';

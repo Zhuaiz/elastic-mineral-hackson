@@ -22,7 +22,7 @@ from urllib.parse import parse_qs, urlparse
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
-from config import INDEX_IMAGES  # noqa: E402
+from config import INDEX_IMAGES, INDEX_SPECIES  # noqa: E402
 from index_es import es_client  # noqa: E402
 
 PORT = 8000
@@ -37,9 +37,30 @@ def es():
     return _es
 
 
+_localities: dict | None = None
+
+
+def localities() -> dict:
+    """种名 → 模式产地（type locality，该矿种的首次描述地；42/98 种有坐标）。"""
+    global _localities
+    if _localities is None:
+        r = es().search(index=INDEX_SPECIES, size=200,
+                        query={"exists": {"field": "type_locality"}},
+                        source=["species", "type_locality", "type_locality_name"])
+        _localities = {h["_source"]["species"]: {
+            "lat": round(h["_source"]["type_locality"]["lat"], 4),
+            "lon": round(h["_source"]["type_locality"]["lon"], 4),
+            "name": h["_source"].get("type_locality_name", "")}
+            for h in r["hits"]["hits"]}
+        print(f"模式产地坐标: {len(_localities)} 种")
+    return _localities
+
+
 def bm25_leg(clue: str) -> dict:
+    # description 降权：Wikipedia 散文里偶现的 streak/hardness/裸数字 IDF 爆高，
+    # 会让不相干矿种赢"关键词彩票"（explain 实测黄铜矿 description:streak 单词 6 分）
     return {"standard": {"query": {"multi_match": {
-        "query": clue, "fields": ["name^2", "props_text", "description"]}}}}
+        "query": clue, "fields": ["name^3", "props_text^2", "description^0.5"]}}}}
 
 
 def knn_leg(vector: list[float]) -> dict:
@@ -114,22 +135,26 @@ def run_search(mode: str, vector, clue, hardness, bm25_weight: float = 1.0) -> l
                              {"range": {"hardness_max": {"gte": hardness}}}]
         body = {"size": CONTEXT_K, "_source": src, "retriever": {"rrf": rrf}}
     hits = es().search(index=INDEX_IMAGES, **body)["hits"]["hits"]
-    # 按种名聚合投票，返回候选（第一名即判定）
+    # 种级 RRF 聚合 Σ1/(2+rank)：纯多数票会放大语料高频种
+    #（蓝铜矿图少必输给闪锌矿图多——9 用例基准: 票数 6/9, 本法 9/9）
     agg: dict[str, dict] = {}
-    for h in hits:
+    for rank, h in enumerate(hits, 1):
         s = h["_source"]
         sp = s["species"]
-        a = agg.setdefault(sp, {"species": sp, "votes": 0, "score": h["_score"],
+        a = agg.setdefault(sp, {"species": sp, "votes": 0, "rrf_score": 0.0,
+                                "score": h["_score"],
                                 "thumb": s.get("thumb"), "props": s.get("props_text", ""),
                                 "crystal_system": s.get("crystal_system"),
                                 "hardness_min": s.get("hardness_min"),
-                                "hardness_max": s.get("hardness_max")})
+                                "hardness_max": s.get("hardness_max"),
+                                "locality": localities().get(sp)})
         a["votes"] += 1
+        a["rrf_score"] += 1.0 / (2 + rank)
     if mode == "text":
-        # 文本腿：同种所有图共享同一段 props_text，票数只反映图片张数，按 BM25 分数排
+        # 文本腿：同种所有图共享同一段 props_text，直接按 BM25 分数排
         ranked = sorted(agg.values(), key=lambda x: -x["score"])
     else:
-        ranked = sorted(agg.values(), key=lambda x: (-x["votes"], -x["score"]))
+        ranked = sorted(agg.values(), key=lambda x: -x["rrf_score"])
     return ranked[:8]
 
 
@@ -219,10 +244,11 @@ def embed(image_b64: str | None, text: str | None):
 
 # 讲台一键示例：演示不翻文件对话框。text/hardness 是排练过的观察描述。
 SAMPLE_SPECIES = [
-    ("malachite", "孔雀石", "green banded mineral, light green streak, hardness 4", 4),
+    ("malachite", "孔雀石", "bright green banded mineral, light green streak, silky luster, hardness 4", 4),
     ("pyrite", "黄铁矿", "brass yellow metallic, greenish black streak", 6.2),
-    ("amethyst", "紫水晶", "purple transparent crystal, white streak, hardness 7", 7),
-    ("gold", "自然金", "golden yellow metallic nugget, very heavy", 2.7),
+    # 紫水晶/自然金是变种或无 Mindat 结构化硬度（索引里 0-0），带硬度过滤会切掉正确答案
+    ("amethyst", "紫水晶", "violet purple transparent crystal, vitreous luster", None),
+    ("gold", "自然金", "gold nugget, yellow metallic, heavy", None),
     ("azurite", "蓝铜矿", "deep azure blue mineral, light blue streak", 3.7),
     ("fluorite", "萤石", "cubic transparent crystal, vitreous, hardness 4", 4),
 ]
