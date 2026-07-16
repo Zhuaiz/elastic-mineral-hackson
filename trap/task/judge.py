@@ -1,6 +1,6 @@
 """Per-case judge for the mineral-id task (trapstreet contract).
 
-Reads the payload from $TRAPTASK_PAYLOAD, extracts the agent's answer, and
+Reads the manifest from $TRAPTASK_MANIFEST, extracts the agent's answer, and
 scores 1.0 iff the answer names the correct mineral species. Species names are
 normalized (lowercase, punctuation stripped, known synonyms/transliterations
 collapsed — creedite/credit, stibnite/antimonite, labradorite/labrador, ...)
@@ -122,10 +122,10 @@ def score(expected: dict, stdout: str, exit_code: int = 0) -> dict:
 
 
 def main() -> None:
-    payload = json.loads(os.environ["TRAPTASK_PAYLOAD"])
-    stdout = Path(payload["outputs"]["case_stdout"]).read_text()
-    exit_code = json.loads(Path(payload["outputs"]["case_meta.json"]).read_text())["exit_code"]
-    expected = json.loads(Path(payload["expected"]["answer.json"]).read_text())
+    manifest = json.loads(os.environ["TRAPTASK_MANIFEST"])
+    stdout = Path(manifest["run"]["stdout"]).read_text()
+    exit_code = json.loads(Path(manifest["run"]["meta"]).read_text())["exit_code"]
+    expected = json.loads((Path(manifest["expected_dir"]) / "answer.json").read_text())
     print(json.dumps(score(expected, stdout, exit_code)))
 
 

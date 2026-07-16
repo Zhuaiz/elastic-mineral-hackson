@@ -1,7 +1,7 @@
 """Overall grader for the mineral-id task (trapstreet contract).
 
 Aggregates per-case judge results into a run-level verdict. Reads the case list
-from $TRAPTASK_PAYLOAD and emits JSON on stdout with `passed`, `score`
+from $TRAPTASK_MANIFEST and emits JSON on stdout with `passed`, `score`
 (accuracy), per-category breakdown, and latency stats — the leaderboard reads
 these. Pass threshold = 60% (fine-grained 98-way mineral ID is hard).
 """
@@ -15,7 +15,7 @@ PASS_THRESHOLD = 0.60
 
 
 def main() -> None:
-    cases = json.loads(os.environ["TRAPTASK_PAYLOAD"])
+    cases = json.loads(os.environ["TRAPTASK_MANIFEST"])
 
     scored = [c for c in cases if c.get("metrics") and c["metrics"].get("score") is not None]
     skipped = [c for c in cases if not c.get("metrics") or c["metrics"].get("score") is None]
